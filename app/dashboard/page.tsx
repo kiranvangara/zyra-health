@@ -19,9 +19,14 @@ export default function Dashboard() {
 
     const checkUser = async () => {
         // use getSession() for faster local check, getUser() triggers network call which might fail on weak connection or timeout
-        const { data: { session } } = await supabase.auth.getSession();
+        // Add minimal delay to allow storage adapter to initialize if race condition exists
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('[Dashboard] Session check:', session ? 'Active' : 'Missing', error);
 
         if (!session) {
+            console.log('[Dashboard] No session, redirecting to login');
             router.push('/login');
             return;
         }
