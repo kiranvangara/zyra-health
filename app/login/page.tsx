@@ -26,9 +26,21 @@ export default function Login() {
 
     const handleSocialLogin = async (provider: 'google' | 'apple') => {
         setLoading(true);
+
+        let redirectTo = `${window.location.origin}/dashboard`;
+
+        // Detect if running in Capacitor (Mobile App)
+        // @ts-ignore
+        if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform()) {
+            redirectTo = 'com.zyrahealth.app://dashboard';
+        }
+
         const { error } = await supabase.auth.signInWithOAuth({
             provider,
-            options: { redirectTo: `${window.location.origin}/dashboard` }
+            options: {
+                redirectTo,
+                skipBrowserRedirect: false // Ensure it opens browser
+            }
         });
         if (error) setError(error.message);
         setLoading(false);
