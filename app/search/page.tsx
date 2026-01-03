@@ -231,20 +231,22 @@ export default function Search() {
                         <div key={doc.id} className="card" onClick={() => router.push(`/doctor/${doc.id}`)} style={{
                             cursor: 'pointer',
                             border: 'none',
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
                             borderRadius: '16px',
-                            padding: '20px',
-                            marginBottom: '15px',
+                            padding: '16px',
+                            marginBottom: '12px',
                             transition: 'transform 0.2s',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px'
                         }}>
-                            <div style={{ display: 'flex', gap: '20px' }}>
+                            <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
                                 <div style={{
-                                    width: '70px', height: '70px',
+                                    width: '60px', height: '60px',
                                     background: '#eef', borderRadius: '50%',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     color: 'var(--primary)', overflow: 'hidden', flexShrink: 0,
-                                    boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-                                    border: '2px solid white'
+                                    border: '1px solid #eee'
                                 }}>
                                     {doc.profile_photo_url ? (
                                         <img src={doc.profile_photo_url} alt={doc.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -252,30 +254,53 @@ export default function Search() {
                                         <User size={24} />
                                     )}
                                 </div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: '600', fontSize: '16px', color: '#1a202c' }}>{doc.display_name || 'Dr. Anonymous'}</div>
-                                    <div style={{ fontSize: '14px', fontWeight: '500', color: '#4a5568', marginBottom: '4px' }}>{doc.specialization} • {doc.experience_years} Yrs</div>
-
-                                    <div style={{ fontWeight: '600', fontSize: '12px', color: 'var(--primary)', marginTop: '4px' }}>
-                                        {getDisplayPrice(doc)}
-                                        <span style={{ fontSize: '10px', color: '#999', fontWeight: 'normal', marginLeft: '5px' }}>Inc. VAT</span>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{
+                                        fontWeight: '600',
+                                        fontSize: '15px',
+                                        color: '#1a202c',
+                                        marginBottom: '2px',
+                                        lineHeight: '1.3'
+                                    }}>
+                                        {doc.display_name || 'Dr. Anonymous'}
                                     </div>
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', gap: '8px' }}>
-                                    {/* Availability Badge */}
+                                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#718096' }}>
+                                        {doc.specialization}
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: '#a0aec0', marginTop: '1px' }}>
+                                        {doc.experience_years} Years Exp.
+                                    </div>
+
+                                    {/* Availability Badge moved here */}
                                     {doc.availability && (
                                         <div style={{
-                                            display: 'flex',
+                                            display: 'inline-flex',
                                             alignItems: 'center',
                                             fontSize: '11px',
                                             fontWeight: '600',
                                             color: doc.availability.includes('Available') ? '#155724' : '#721c24',
+                                            background: doc.availability.includes('Available') ? '#d4edda' : '#f8d7da',
+                                            padding: '2px 8px',
+                                            borderRadius: '4px',
+                                            marginTop: '6px'
                                         }}>
-                                            {doc.availability === 'Available Today' && <span className="pulsing-dot"></span>}
+                                            {doc.availability === 'Available Today' && <span className="pulsing-dot" style={{ width: '6px', height: '6px', marginRight: '4px' }}></span>}
                                             {doc.availability}
                                         </div>
                                     )}
-                                    <button className="btn primary" style={{ width: 'auto', padding: '8px 20px', fontSize: '12px' }}>Book</button>
+                                </div>
+
+                                {/* Book Button */}
+                                <div>
+                                    <button className="btn primary" style={{
+                                        width: 'auto',
+                                        padding: '8px 16px',
+                                        fontSize: '12px',
+                                        height: '36px',
+                                        background: 'var(--primary)'
+                                    }}>
+                                        Book
+                                    </button>
                                 </div>
                             </div>
                         </div>

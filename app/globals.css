@@ -25,6 +25,7 @@ body {
   -webkit-tap-highlight-color: transparent;
   /* Remove native touch highlight */
   padding-bottom: env(safe-area-inset-bottom);
+  padding-top: env(safe-area-inset-top);
 }
 
 /* Native-like constraints */

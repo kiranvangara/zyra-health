@@ -42,7 +42,7 @@ export default function BottomNav() {
             backdropFilter: 'blur(10px)',
             display: 'flex',
             justifyContent: 'space-around',
-            padding: '12px 0 24px 0', // Extra padding for safe area
+            padding: '12px 0 calc(12px + env(safe-area-inset-bottom)) 0', // Dynamic safe area
             zIndex: 1000,
             boxShadow: '0 -4px 20px rgba(0,0,0,0.02)'
         }}>
