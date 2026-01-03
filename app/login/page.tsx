@@ -11,12 +11,26 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const checkUserRoleAndRedirect = async (userId: string) => {
+        // Check if user is a doctor
+        const { data: doctor } = await supabase
+            .from('doctors')
+            .select('id')
+            .eq('id', userId)
+            .single();
+
+        if (doctor) {
+            router.replace('/doctor/dashboard');
+        } else {
+            router.replace('/dashboard');
+        }
+    };
+
     useEffect(() => {
-        // Auto-redirect if already logged in (e.g. persistent session)
         const checkSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                router.replace('/dashboard');
+                checkUserRoleAndRedirect(session.user.id);
             }
         };
         checkSession();
@@ -31,7 +45,9 @@ export default function Login() {
             setError(error.message);
             setLoading(false);
         } else {
-            router.push('/dashboard');
+            if (data.session) {
+                checkUserRoleAndRedirect(data.session.user.id);
+            }
         }
     };
 

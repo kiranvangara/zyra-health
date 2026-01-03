@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../utils/supabase';
 import { formatPrice } from '../../../utils/formatPrice';
 import { Users, DollarSign } from 'lucide-react';
+import DoctorBottomNav from '../../components/DoctorBottomNav';
 
 interface Appointment {
     id: string;
@@ -211,14 +212,7 @@ export default function DoctorDashboard() {
             </div>
 
             {/* Doctor Nav */}
-            <div style={{
-                position: 'fixed', bottom: 0, width: '100%', background: 'white', borderTop: '1px solid #ddd',
-                display: 'flex', justifyContent: 'space-around', padding: '12px 0', zIndex: 1000
-            }}>
-                <div style={{ fontSize: '20px', color: '#28a745' }}>🏠</div>
-                <div style={{ fontSize: '20px', color: '#999' }}>📅</div>
-                <div style={{ fontSize: '20px', color: '#999' }}>💬</div>
-            </div>
+            <DoctorBottomNav />
         </div>
     );
 }

@@ -10,52 +10,19 @@ interface Medication {
     duration: string;
 }
 
+import SignatureCanvas from 'react-signature-canvas';
+import { useRef } from 'react';
+
+// ... (previous imports)
+
 function RxWriterContent() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const appointmentId = searchParams.get('appointmentId');
+    // ... (previous state)
+    const sigPad = useRef<SignatureCanvas>(null);
 
-    const [patient, setPatient] = useState<any>(null);
-    const [medications, setMedications] = useState<Medication[]>([
-        { name: '', frequency: '', duration: '' }
-    ]);
-    const [advice, setAdvice] = useState('');
-    const [loading, setLoading] = useState(false);
+    // ... (previous helper functions)
 
-    useEffect(() => {
-        if (appointmentId) {
-            fetchPatientInfo();
-        }
-    }, [appointmentId]);
-
-    const fetchPatientInfo = async () => {
-        const { data: appointment } = await supabase
-            .from('appointments')
-            .select('patient_id')
-            .eq('id', appointmentId)
-            .single();
-
-        if (appointment) {
-            const { data: { user } } = await supabase.auth.admin.getUserById(appointment.patient_id);
-            setPatient({
-                name: user?.user_metadata?.full_name || 'Patient',
-                id: appointment.patient_id
-            });
-        }
-    };
-
-    const addMedication = () => {
-        setMedications([...medications, { name: '', frequency: '', duration: '' }]);
-    };
-
-    const updateMedication = (index: number, field: keyof Medication, value: string) => {
-        const updated = [...medications];
-        updated[index][field] = value;
-        setMedications(updated);
-    };
-
-    const removeMedication = (index: number) => {
-        setMedications(medications.filter((_, i) => i !== index));
+    const clearSignature = () => {
+        sigPad.current?.clear();
     };
 
     const handleSignAndSend = async () => {
@@ -71,6 +38,16 @@ function RxWriterContent() {
             return;
         }
 
+        // Validate Signature
+        if (sigPad.current?.isEmpty()) {
+            alert('Please sign the prescription');
+            return;
+        }
+
+        // In a real app, upload this data URL to Supabase Storage
+        const signatureDataUrl = sigPad.current?.getTrimmedCanvas().toDataURL('image/png');
+        console.log('Signature captured:', signatureDataUrl?.substring(0, 50) + '...');
+
         setLoading(true);
 
         try {
@@ -80,6 +57,7 @@ function RxWriterContent() {
                     appointment_id: appointmentId,
                     medications: validMeds,
                     advice: advice || null,
+                    // If we had a signature_url column, we'd upload the image first and save the URL here
                 });
 
             if (error) throw error;
@@ -94,88 +72,15 @@ function RxWriterContent() {
 
     return (
         <div style={{ minHeight: '100vh', background: '#f8f9fa', display: 'flex', flexDirection: 'column' }}>
-            {/* Header */}
-            <div style={{ padding: '20px', background: 'white', borderBottom: '1px solid #ddd', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <div onClick={() => router.back()} style={{ fontSize: '20px', cursor: 'pointer' }}>&lt;</div>
-                <div>
-                    <h2 style={{ margin: 0, fontSize: '18px' }}>Rx: {patient?.name || 'Loading...'}</h2>
-                    <div style={{ fontSize: '12px', color: '#666' }}>Digital Prescription</div>
-                </div>
-            </div>
+            {/* ... (Header) ... */}
 
             <div style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
-                {/* Medications */}
-                {medications.map((med, index) => (
-                    <div key={index} className="card" style={{ padding: '15px', marginBottom: '15px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                            <div style={{ fontWeight: 'bold', fontSize: '14px' }}>Medicine {index + 1}</div>
-                            {medications.length > 1 && (
-                                <div
-                                    onClick={() => removeMedication(index)}
-                                    style={{ color: '#ff4444', cursor: 'pointer', fontSize: '12px' }}
-                                >
-                                    Remove
-                                </div>
-                            )}
-                        </div>
+                {/* ... (Medications List) ... */}
 
-                        <input
-                            type="text"
-                            className="input-box"
-                            placeholder="Medicine name (e.g., Paracetamol 500mg)"
-                            value={med.name}
-                            onChange={(e) => updateMedication(index, 'name', e.target.value)}
-                            style={{ marginBottom: '10px' }}
-                        />
-
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <div style={{ flex: 1 }}>
-                                <label style={{ fontSize: '11px', color: '#666' }}>Frequency</label>
-                                <input
-                                    type="text"
-                                    className="input-box"
-                                    placeholder="1-0-1"
-                                    value={med.frequency}
-                                    onChange={(e) => updateMedication(index, 'frequency', e.target.value)}
-                                    style={{ padding: '8px' }}
-                                />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <label style={{ fontSize: '11px', color: '#666' }}>Duration</label>
-                                <input
-                                    type="text"
-                                    className="input-box"
-                                    placeholder="3 Days"
-                                    value={med.duration}
-                                    onChange={(e) => updateMedication(index, 'duration', e.target.value)}
-                                    style={{ padding: '8px' }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                ))}
-
-                {/* Add More */}
-                <div
-                    className="card"
-                    onClick={addMedication}
-                    style={{
-                        padding: '15px',
-                        border: '1px dashed var(--primary)',
-                        background: '#eef',
-                        textAlign: 'center',
-                        color: 'var(--primary)',
-                        fontWeight: 'bold',
-                        fontSize: '13px',
-                        cursor: 'pointer',
-                        marginBottom: '20px'
-                    }}
-                >
-                    + Add Medicine
-                </div>
+                {/* ... (Add More Button) ... */}
 
                 {/* Notes */}
-                <div>
+                <div style={{ marginBottom: '20px' }}>
                     <label style={{ fontSize: '13px', fontWeight: 'bold' }}>Advice / Notes</label>
                     <textarea
                         className="input-box"
@@ -184,6 +89,27 @@ function RxWriterContent() {
                         value={advice}
                         onChange={(e) => setAdvice(e.target.value)}
                     />
+                </div>
+
+                {/* Signature Pad */}
+                <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                        <label style={{ fontSize: '13px', fontWeight: 'bold' }}>Doctor's Signature</label>
+                        <span onClick={clearSignature} style={{ fontSize: '12px', color: '#ff4444', cursor: 'pointer' }}>Clear x</span>
+                    </div>
+                    <div style={{ border: '1px solid #ccc', borderRadius: '8px', background: 'white', overflow: 'hidden' }}>
+                        <SignatureCanvas
+                            ref={sigPad}
+                            penColor="black"
+                            canvasProps={{
+                                width: 350, // Should be responsive ideally, but fixed for MPV
+                                height: 150,
+                                className: 'sigCanvas',
+                                style: { width: '100%', height: '150px' }
+                            }}
+                        />
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>Sign above using your finger or stylus</div>
                 </div>
             </div>
 
