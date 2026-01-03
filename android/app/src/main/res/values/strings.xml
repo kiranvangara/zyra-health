@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ZyraHealth</string>
+    <string name="title_activity_main">ZyraHealth</string>
+    <string name="package_name">com.zyrahealth.app</string>
+    <string name="custom_url_scheme">com.zyrahealth.app</string>
+</resources>
