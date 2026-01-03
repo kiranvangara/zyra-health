@@ -32,8 +32,8 @@ export default function Splash() {
       }
     };
 
-    // Add a small delay for splash effect and to allow storage to init
-    setTimeout(checkSession, 1500);
+    // Check immediately without delay for faster load
+    checkSession();
   }, [router]);
 
   return (
