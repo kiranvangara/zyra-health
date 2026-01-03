@@ -10,6 +10,15 @@ if (typeof window !== 'undefined') {
     });
 }
 
+import dynamic from 'next/dynamic';
+
+const CapacitorAuthListener = dynamic(() => import('./components/CapacitorAuthListener'), { ssr: false });
+
 export function CSPostHogProvider({ children }: { children: ReactNode }) {
-    return <PostHogProvider client={posthog}>{children}</PostHogProvider>;
+    return (
+        <PostHogProvider client={posthog}>
+            {children}
+            <CapacitorAuthListener />
+        </PostHogProvider>
+    );
 }

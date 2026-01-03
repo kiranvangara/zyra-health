@@ -51,9 +51,6 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: capacitorScript }} />
-      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <CurrencyProvider>
           <CSPostHogProvider>
