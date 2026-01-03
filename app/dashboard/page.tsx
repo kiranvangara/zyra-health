@@ -18,12 +18,15 @@ export default function Dashboard() {
     }, []);
 
     const checkUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
+        // use getSession() for faster local check, getUser() triggers network call which might fail on weak connection or timeout
+        const { data: { session } } = await supabase.auth.getSession();
 
-        if (!user) {
+        if (!session) {
             router.push('/login');
             return;
         }
+
+        const user = session.user;
 
         setUser(user);
 

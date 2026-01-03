@@ -16,15 +16,17 @@ export default function CapacitorAuthListener() {
             try {
                 const url = new URL(data.url);
 
-                // Check if it's an auth callback (contains hash with tokens)
-                if (url.hash && (url.hash.includes('access_token') || url.hash.includes('refresh_token'))) {
-                    console.log('Auth tokens detected, navigating to callback...');
+                // Check if it's an auth callback (contains hash with tokens OR search param with code)
+                const hasHashToken = url.hash && (url.hash.includes('access_token') || url.hash.includes('refresh_token'));
+                const hasCode = url.searchParams.get('code');
 
-                    // Force client-side navigation to the callback page with the hash
-                    // We use window.location here to ensure the hash is physically present in the URL bar
-                    // so Supabase's auto-detect logic works if needed, OR the callback page parses it.
-                    // Using router.push might strip the hash depending on Next.js config.
-                    window.location.href = '/auth/callback' + url.hash;
+                if (hasHashToken || hasCode) {
+                    console.log('Auth tokens/code detected, navigating to callback...');
+
+                    // Force client-side navigation to the callback page
+                    // Include both search and hash to cover all bases
+                    const target = '/auth/callback' + url.search + url.hash;
+                    window.location.href = target;
                 }
             } catch (e) {
                 console.error('Error parsing deep link:', e);

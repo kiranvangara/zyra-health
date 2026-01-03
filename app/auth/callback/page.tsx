@@ -13,6 +13,7 @@ function CallbackContent() {
             const code = searchParams.get('code');
             const next = searchParams.get('next') || '/dashboard';
 
+            // 1. Handle PKCE Code Exchange
             if (code) {
                 try {
                     await supabase.auth.exchangeCodeForSession(code);
@@ -21,7 +22,18 @@ function CallbackContent() {
                 }
             }
 
-            router.replace(next);
+            // 2. Wait for Session to be available (handles both Code exchange result AND Implicit hash detection)
+            // Give it a moment for Supabase to persist safely
+            setTimeout(async () => {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    router.replace(next);
+                } else {
+                    // Fallback: just redirect and hope dashboard checks again or user tries again
+                    console.warn('No session found after callback, redirecting anyway...');
+                    router.replace(next);
+                }
+            }, 1000);
         };
 
         handleCallback();
