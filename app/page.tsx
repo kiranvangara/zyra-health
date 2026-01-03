@@ -2,30 +2,37 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import Link from 'next/link';
+import { supabase } from './utils/supabase';
 
 export default function Splash() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if onboarding is already complete
-    // Simple client-side cookie check for MVP
-    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-      const [name, value] = cookie.trim().split('=');
-      acc[name] = value;
-      return acc;
-    }, {} as Record<string, string>);
+    const checkSession = async () => {
+      // 1. Check for active Supabase session (Native Storage takes a moment)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.replace('/dashboard');
+        return;
+      }
 
-    if (cookies['onboarding_complete']) {
-      router.push('/login'); // Or /home if we assume logged in, but login is safer
-      return;
-    }
+      // 2. Fallback to onboarding check
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const [name, value] = cookie.trim().split('=');
+        acc[name] = value;
+        return acc;
+      }, {} as Record<string, string>);
 
-    // Simulate loading/splash delay then go to onboarding
-    const timer = setTimeout(() => {
-      router.push('/onboarding');
-    }, 2500);
-    return () => clearTimeout(timer);
+      if (cookies['onboarding_complete']) {
+        router.replace('/login');
+      } else {
+        router.replace('/onboarding');
+      }
+    };
+
+    // Add a small delay for splash effect and to allow storage to init
+    setTimeout(checkSession, 1500);
   }, [router]);
 
   return (

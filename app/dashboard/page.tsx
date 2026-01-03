@@ -14,41 +14,56 @@ export default function Dashboard() {
     const [upcomingAppointment, setUpcomingAppointment] = useState<any>(null);
 
     useEffect(() => {
+        // Listen for auth state changes (handles async storage loading, token refreshes, etc.)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log('[Dashboard] Auth Event:', event, session ? 'Session Active' : 'No Session');
+
+            if (session) {
+                setUser(session.user);
+                checkProfile(session.user);
+                fetchUpcomingAppointment(session.user.id);
+            } else {
+                // Only redirect if explicitly signed out or no session after a grace period
+                // But for now, if no session, we can't show dashboard data
+                // We'll trust the listener. If it says NULL, we might be loading or logged out.
+                // Best practice: Wait for 'INITIAL_SESSION' or storage load.
+                // But simplified:
+                if (event === 'SIGNED_OUT') {
+                    router.replace('/login');
+                }
+            }
+            setLoading(false);
+        });
+
+        // Initial check in case listener doesn't fire immediately (though it usually does)
         checkUser();
+
+        return () => {
+            subscription.unsubscribe();
+        };
     }, []);
 
     const checkUser = async () => {
-        // use getSession() for faster local check, getUser() triggers network call which might fail on weak connection or timeout
-        // Add minimal delay to allow storage adapter to initialize if race condition exists
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('[Dashboard] Session check:', session ? 'Active' : 'Missing', error);
-
+        // Fallback initial check
+        const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-            console.log('[Dashboard] No session, redirecting to login');
-            router.push('/login');
-            return;
+            // Don't redirect immediately, let the listener handle it or show loading state
+            // router.push('/login'); 
+        } else {
+            setUser(session.user);
+            setLoading(false);
         }
+    };
 
-        const user = session.user;
-
-        setUser(user);
-
-        // Check if patient profile exists
+    const checkProfile = async (user: any) => {
         const { data: patientProfile } = await supabase
             .from('patients')
             .select('*')
             .eq('id', user.id)
             .single();
-        // If no profile, redirect to setup
         if (!patientProfile) {
             router.push('/profile-setup');
-            return;
         }
-
-        await fetchUpcomingAppointment(user.id);
-        setLoading(false);
     };
 
     const fetchUpcomingAppointment = async (userId: string) => {
