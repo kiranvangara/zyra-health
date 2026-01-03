@@ -2,8 +2,14 @@ import { Preferences } from '@capacitor/preferences';
 
 const CapacitorStorage = {
     getItem: async (key: string): Promise<string | null> => {
-        const { value } = await Preferences.get({ key });
-        return value;
+        try {
+            const { value } = await Preferences.get({ key });
+            console.log(`[CapacitorStorage] Get ${key}:`, value ? 'Found' : 'Null');
+            return value;
+        } catch (e) {
+            console.error('[CapacitorStorage] Get Error', e);
+            return null;
+        }
     },
     setItem: async (key: string, value: string): Promise<void> => {
         await Preferences.set({ key, value });
