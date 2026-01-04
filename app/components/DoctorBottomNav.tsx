@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Calendar, MessageSquare } from 'lucide-react';
+import { Home, Calendar, MessageSquare, User } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
 export default function DoctorBottomNav() {
@@ -54,6 +54,17 @@ export default function DoctorBottomNav() {
             >
                 <MessageSquare size={24} strokeWidth={isActive('/doctor/chat') ? 2.5 : 2} />
                 <span style={{ fontSize: '10px', marginTop: '4px', fontWeight: isActive('/doctor/chat') ? '600' : '400' }}>Chat</span>
+            </div>
+
+            <div
+                onClick={() => router.push('/doctor/settings?tab=profile')}
+                style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer',
+                    color: isActive('/doctor/settings') ? 'var(--primary)' : '#94a3b8'
+                }}
+            >
+                <User size={24} strokeWidth={isActive('/doctor/settings') ? 2.5 : 2} />
+                <span style={{ fontSize: '10px', marginTop: '4px', fontWeight: isActive('/doctor/settings') ? '600' : '400' }}>Profile</span>
             </div>
         </div>
     );

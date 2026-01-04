@@ -125,7 +125,6 @@ export default function DoctorDashboard() {
                     <h2 style={{ margin: 0, fontSize: '18px', color: '#333' }}>{doctor?.name} 👨‍⚕️</h2>
                     <div style={{ fontSize: '12px', color: '#28a745', fontWeight: 'bold' }}>● Online</div>
                 </div>
-                <div style={{ fontSize: '20px', cursor: 'pointer' }} onClick={() => router.push('/doctor/settings')}>⚙️</div>
             </div>
 
             <div style={{ padding: '20px' }}>
