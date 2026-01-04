@@ -6,10 +6,11 @@ import BottomNav from '../components/BottomNav';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabase';
-import { SPECIALIZATIONS } from '../utils/constants';
 import { formatPrice } from '../../utils/formatPrice';
 import { getSpecializationForSymptom } from '../../utils/symptomMappings';
 import { useCurrency } from '../context/CurrencyContext';
+
+import { getAvailableSpecializations } from '../actions/medical-data';
 
 interface Doctor {
     id: string;
@@ -31,6 +32,15 @@ export default function Search() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
+    const [availableSpecializations, setAvailableSpecializations] = useState<string[]>([]);
+
+    useEffect(() => {
+        const loadSpecs = async () => {
+            const specs = await getAvailableSpecializations();
+            setAvailableSpecializations(specs);
+        };
+        loadSpecs();
+    }, []);
 
     useEffect(() => {
         fetchDoctors();
@@ -166,7 +176,7 @@ export default function Search() {
         return formatPrice(doc.consultation_fee);
     };
 
-    const specializations = ['All', ...SPECIALIZATIONS];
+    const specializations = ['All', ...availableSpecializations];
 
     return (
         <div style={{ minHeight: '100vh', background: '#f8f9fa', paddingBottom: '60px' }}>

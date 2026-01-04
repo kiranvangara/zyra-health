@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { getAllDoctors, updateDoctorVerification, updateDoctorFee, createDoctor, updateDoctorProfile } from '../actions';
 import { Plus, X, Pencil } from 'lucide-react';
 import { supabase } from '../../utils/supabase';
-import { SPECIALIZATIONS } from '../../utils/constants';
+import { SPECIALIZATIONS } from '../../constants/medical';
 
 interface Doctor {
     id: string;
@@ -328,11 +328,53 @@ export default function ManageDoctors() {
                                         value={formData.specialization}
                                         onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
                                     >
+                                        <option value="">Select Specialization</option>
                                         {SPECIALIZATIONS.map(spec => (
                                             <option key={spec} value={spec}>{spec}</option>
                                         ))}
                                     </select>
                                 </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>Experience (Years)</label>
+                                        <input
+                                            type="number"
+                                            className="input-box"
+                                            value={formData.experience_years}
+                                            onChange={(e) => setFormData({ ...formData, experience_years: parseInt(e.target.value) || 0 })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>Registration No.</label>
+                                        <input
+                                            className="input-box"
+                                            value={formData.registration_number}
+                                            onChange={(e) => setFormData({ ...formData, registration_number: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>Education</label>
+                                    <input
+                                        className="input-box"
+                                        placeholder="MBBS, MD..."
+                                        value={formData.education}
+                                        onChange={(e) => setFormData({ ...formData, education: e.target.value })}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>Languages (Comma separated)</label>
+                                    <input
+                                        className="input-box"
+                                        placeholder="English, Hindi, Spanish"
+                                        value={formData.languages_input}
+                                        onChange={(e) => setFormData({ ...formData, languages_input: e.target.value })}
+                                    />
+                                </div>
+
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                     <div>
                                         <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>Fee (INR)</label>

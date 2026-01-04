@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../utils/supabase';
 import DoctorBottomNav from '../../components/DoctorBottomNav';
 import { User, Save, Globe, Stethoscope, Languages } from 'lucide-react';
+import { SPECIALIZATIONS, LANGUAGES } from '../../constants/medical';
 
 const TIMEZONES = [
     'Asia/Kolkata', // Default first
@@ -14,29 +15,6 @@ const TIMEZONES = [
     'Asia/Dubai',
     'Australia/Sydney',
     'Asia/Singapore'
-];
-
-const SPECIALIZATIONS = [
-    'General Physician',
-    'Cardiologist',
-    'Dermatologist',
-    'Pediatrician',
-    'Neurologist',
-    'Orthopedic',
-    'Gynecologist',
-    'Psychiatrist',
-    'Dentist',
-    'ENT Specialist',
-    'Endocrinologist',
-    'Urologist',
-    'Ophthalmologist',
-    'Gastroenterologist'
-];
-
-const LANGUAGES = [
-    'English', 'Hindi', 'Spanish', 'French', 'Arabic',
-    'Mandarin', 'Bengali', 'Telugu', 'Marathi', 'Tamil',
-    'Urdu', 'German', 'Portuguese', 'Italian'
 ];
 
 export default function DoctorProfileSettings() {
