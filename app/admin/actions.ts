@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 
 console.warn('Warning: ADMIN_KEY (SUPABASE_SECRET_KEY) is missing or empty.');
 
@@ -274,7 +274,7 @@ export async function createDoctor(doctorData: any) {
             throw dbError;
         }
 
-        revalidateTag('doctor-specializations');
+        revalidatePath('/search');
         return { success: true, error: null };
     } catch (error: any) {
         return { success: false, error: error.message };
@@ -303,7 +303,7 @@ export async function updateDoctorProfile(doctorId: string, updates: any) {
 
         if (error) throw error;
 
-        revalidateTag('doctor-specializations');
+        revalidatePath('/search');
         return { success: true, error: null };
     } catch (error: any) {
         return { success: false, error: error.message };

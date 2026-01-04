@@ -86,11 +86,6 @@ export const SPECIALIZATIONS = [
 ].sort();
 
 export const LANGUAGES = [
-    'English', 'Hindi', 'Spanish', 'French', 'Arabic',
-    'Mandarin', 'Bengali', 'Telugu', 'Marathi', 'Tamil',
-    'Urdu', 'German', 'Portuguese', 'Italian', 'Russian',
-    'Japanese', 'Korean', 'Turkish', 'Vietnamese', 'Punjabi',
-    'Gujarati', 'Malayalam', 'Kannada', 'Odia', 'Bhojpuri',
-    'Assamese', 'Maithili', 'Santali', 'Kashmiri', 'Nepali',
-    'Sindhi', 'Konkani', 'Manipuri'
+    'English', 'Hindi', 'Bengali', 'Telugu', 'Marathi', 'Tamil',
+    'Gujarati', 'Malayalam', 'Kannada', 'Punjabi'
 ].sort();
