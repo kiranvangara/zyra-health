@@ -16,7 +16,17 @@ import { useRef } from 'react';
 // ... (previous imports)
 
 function RxWriterContent() {
-    // ... (previous state)
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const appointmentId = searchParams.get('appointmentId');
+
+    const [patient, setPatient] = useState<any>(null);
+    const [medications, setMedications] = useState<Medication[]>([
+        { name: '', frequency: '', duration: '' }
+    ]);
+    const [advice, setAdvice] = useState('');
+    const [loading, setLoading] = useState(false);
+
     const sigPad = useRef<SignatureCanvas>(null);
 
     // ... (previous helper functions)

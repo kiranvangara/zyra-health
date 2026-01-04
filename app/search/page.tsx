@@ -6,6 +6,7 @@ import BottomNav from '../components/BottomNav';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabase';
+import { SPECIALIZATIONS } from '../utils/constants';
 import { formatPrice } from '../../utils/formatPrice';
 import { getSpecializationForSymptom } from '../../utils/symptomMappings';
 import { useCurrency } from '../context/CurrencyContext';
@@ -165,7 +166,7 @@ export default function Search() {
         return formatPrice(doc.consultation_fee);
     };
 
-    const specializations = ['All', 'Cardiology', 'Dermatology', 'General Physician', 'Pediatrics', 'Orthopedics'];
+    const specializations = ['All', ...SPECIALIZATIONS];
 
     return (
         <div style={{ minHeight: '100vh', background: '#f8f9fa', paddingBottom: '60px' }}>

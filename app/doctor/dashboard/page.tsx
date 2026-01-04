@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../utils/supabase';
 import { formatPrice } from '../../../utils/formatPrice';
-import { Users, DollarSign } from 'lucide-react';
+import { Users, DollarSign, Clock } from 'lucide-react';
 import DoctorBottomNav from '../../components/DoctorBottomNav';
 
 interface Appointment {
@@ -125,7 +125,7 @@ export default function DoctorDashboard() {
                     <h2 style={{ margin: 0, fontSize: '18px', color: '#333' }}>{doctor?.name} 👨‍⚕️</h2>
                     <div style={{ fontSize: '12px', color: '#28a745', fontWeight: 'bold' }}>● Online</div>
                 </div>
-                <div style={{ fontSize: '20px' }}>⚙️</div>
+                <div style={{ fontSize: '20px', cursor: 'pointer' }} onClick={() => router.push('/doctor/profile')}>⚙️</div>
             </div>
 
             <div style={{ padding: '20px' }}>
@@ -149,6 +149,30 @@ export default function DoctorDashboard() {
                         </div>
                         <div style={{ fontSize: '11px', color: '#666' }}>Earnings</div>
                     </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="card"
+                    onClick={() => router.push('/doctor/availability')}
+                    style={{
+                        padding: '16px',
+                        marginBottom: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '15px',
+                        cursor: 'pointer',
+                        border: '1px solid #e0e7ff',
+                        background: '#f5f7ff'
+                    }}
+                >
+                    <div style={{ background: '#fff', padding: '8px', borderRadius: '50%', color: 'var(--primary)', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+                        <Clock size={20} />
+                    </div>
+                    <div>
+                        <div style={{ fontWeight: 'bold', color: '#333' }}>Manage Availability</div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>Set weekly schedule & time off</div>
+                    </div>
+                    <div style={{ marginLeft: 'auto', color: '#999', fontSize: '18px' }}>›</div>
                 </div>
 
                 <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', color: '#555' }}>TODAY'S APPOINTMENTS</div>

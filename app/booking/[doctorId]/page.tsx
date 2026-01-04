@@ -4,23 +4,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../utils/supabase';
 import posthog from 'posthog-js';
-// Imports removed
+import { getDoctorSlots } from '../../actions/availability';
 import { formatPrice } from '../../../utils/formatPrice';
 import { useCurrency } from '../../context/CurrencyContext';
-
-// Helper to check slot validity (Client-side usage in component)
-const isSlotValid = (slotTime: string, selectedDate: Date) => {
-    const now = new Date();
-    // Create date object for the slot
-    const slotDateTime = new Date(selectedDate);
-    const [hours, minutes] = slotTime.split(':');
-    slotDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-    // Get time 10 mins from now
-    const tenMinutesFromNow = new Date(now.getTime() + 10 * 60000);
-
-    return slotDateTime > tenMinutesFromNow;
-};
+import { format, parseISO } from 'date-fns';
 
 export default function Booking() {
     const params = useParams();
@@ -28,9 +15,16 @@ export default function Booking() {
     const { currency } = useCurrency();
     const [doctor, setDoctor] = useState<any>(null);
     const [user, setUser] = useState<any>(null);
-    const [selectedDate, setSelectedDate] = useState('');
-    const [selectedTime, setSelectedTime] = useState('');
-    const [loading, setLoading] = useState(false);
+
+    // Slots State
+    const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+    const [slotsLoading, setSlotsLoading] = useState(true);
+    const [slotsError, setSlotsError] = useState<string | null>(null);
+
+    // Selection State
+    const [selectedDate, setSelectedDate] = useState(''); // YYYY-MM-DD
+    const [selectedSlotISO, setSelectedSlotISO] = useState(''); // Full ISO string
+    const [bookingLoading, setBookingLoading] = useState(false);
 
     useEffect(() => {
         init();
@@ -59,10 +53,37 @@ export default function Booking() {
                 doctor_name: data.display_name,
                 specialization: data.specialization
             });
+
+            // Fetch Slots
+            fetchSlots(data.id);
         }
     };
 
+    const fetchSlots = async (doctorId: string) => {
+        setSlotsLoading(true);
+        const { slots, error } = await getDoctorSlots(doctorId);
+        if (error) {
+            setSlotsError(error);
+        } else {
+            setAvailableSlots(slots);
+            // Auto-select first date if available
+            if (slots.length > 0) {
+                const firstDate = slots[0].split('T')[0];
+                setSelectedDate(firstDate);
+            }
+        }
+        setSlotsLoading(false);
+    };
 
+    // Group slots by Date: { "2024-01-20": ["10:00", "10:30"] }
+    const slotsByDate = availableSlots.reduce((acc: any, isoString) => {
+        const date = isoString.split('T')[0];
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(isoString);
+        return acc;
+    }, {});
+
+    const availableDates = Object.keys(slotsByDate).sort();
 
     const getDisplayPrice = () => {
         if (!doctor) return '';
@@ -74,28 +95,24 @@ export default function Booking() {
     };
 
     const handleBookAppointment = async () => {
-        if (!selectedDate || !selectedTime) {
-            alert('Please select date and time');
+        if (!selectedSlotISO) {
+            alert('Please select a time slot');
             return;
         }
 
-        setLoading(true);
+        setBookingLoading(true);
 
         try {
             posthog.capture('booking_start', {
                 doctor_id: doctor.id
             });
 
-            // Create appointment first to get ID
-            // Force IST timezone (UTC+5:30) to avoid timezone confusion
-            const scheduledAt = `${selectedDate}T${selectedTime}:00+05:30`;
-
             const { data: appointment, error: apptError } = await supabase
                 .from('appointments')
                 .insert({
                     patient_id: user.id,
                     doctor_id: doctor.id,
-                    scheduled_at: scheduledAt,
+                    scheduled_at: selectedSlotISO, // Use the exact ISO from backend
                     status: 'confirmed',
                 })
                 .select()
@@ -148,7 +165,7 @@ export default function Booking() {
             router.push('/appointments');
         } catch (error: any) {
             alert('Error creating appointment: ' + error.message);
-            setLoading(false);
+            setBookingLoading(false);
         }
     };
 
@@ -188,58 +205,98 @@ export default function Booking() {
                     </div>
                 </div>
 
-                {/* Date Selection */}
-                <div className="card">
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', display: 'block' }}>Select Date</label>
-                    <input
-                        type="date"
-                        className="input-box"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                    />
-                </div>
+                {/* Slots Loading State */}
+                {slotsLoading && <div className="card" style={{ padding: '20px', textAlign: 'center', color: '#666' }}>checking availability...</div>}
 
-                {/* Time Selection */}
-                <div className="card">
-                    <label style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', display: 'block' }}>Select Time</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                        {['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'].map(time => {
-                            const isValid = selectedDate ? isSlotValid(time, new Date(selectedDate)) : true;
+                {slotsError && <div style={{ color: 'red', marginBottom: '10px' }}>Error: {slotsError}</div>}
 
-                            return (
-                                <div
-                                    key={time}
-                                    onClick={() => {
-                                        if (isValid) setSelectedTime(time);
-                                    }}
-                                    style={{
-                                        padding: '10px',
-                                        textAlign: 'center',
-                                        border: `2px solid ${selectedTime === time ? 'var(--primary)' : '#ddd'}`,
-                                        borderRadius: '8px',
-                                        cursor: isValid ? 'pointer' : 'not-allowed',
-                                        background: selectedTime === time ? '#eef' : (isValid ? 'white' : '#f5f5f5'),
-                                        fontSize: '14px',
-                                        fontWeight: selectedTime === time ? 'bold' : 'normal',
-                                        opacity: isValid ? 1 : 0.5,
-                                        color: isValid ? 'inherit' : '#999'
-                                    }}
-                                >
-                                    {time}
+                {/* Slots UI */}
+                {!slotsLoading && !slotsError && (
+                    <>
+                        {/* Date Selection */}
+                        <div style={{ marginBottom: '15px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', display: 'block' }}>Select Date</label>
+                            {availableDates.length === 0 ? (
+                                <div style={{ padding: '15px', background: '#ffebee', borderRadius: '8px', color: '#c62828', fontSize: '13px' }}>
+                                    No slots available in the next 7 days.
                                 </div>
-                            )
-                        })}
-                    </div>
-                </div>
+                            ) : (
+                                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' }}>
+                                    {availableDates.map(dateStr => {
+                                        const dateObj = parseISO(dateStr);
+                                        const dayName = format(dateObj, 'EEE');
+                                        const dayNum = format(dateObj, 'd');
+                                        const month = format(dateObj, 'MMM');
+                                        const isSelected = selectedDate === dateStr;
+
+                                        return (
+                                            <div
+                                                key={dateStr}
+                                                onClick={() => setSelectedDate(dateStr)}
+                                                style={{
+                                                    minWidth: '70px',
+                                                    padding: '10px',
+                                                    textAlign: 'center',
+                                                    background: isSelected ? 'var(--primary)' : 'white',
+                                                    color: isSelected ? 'white' : '#333',
+                                                    border: isSelected ? 'none' : '1px solid #ddd',
+                                                    borderRadius: '12px',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <div style={{ fontSize: '11px', opacity: 0.8 }}>{dayName}</div>
+                                                <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{dayNum}</div>
+                                                <div style={{ fontSize: '10px', opacity: 0.8 }}>{month}</div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Time Selection */}
+                        {selectedDate && slotsByDate[selectedDate] && (
+                            <div className="card">
+                                <label style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', display: 'block' }}>Select Time</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                                    {slotsByDate[selectedDate].map((isoString: string) => {
+                                        const timeLabel = format(parseISO(isoString), 'h:mm a');
+                                        const isSelected = selectedSlotISO === isoString;
+
+                                        return (
+                                            <div
+                                                key={isoString}
+                                                onClick={() => setSelectedSlotISO(isoString)}
+                                                style={{
+                                                    padding: '12px',
+                                                    textAlign: 'center',
+                                                    border: isSelected ? '2px solid var(--primary)' : '1px solid #eee',
+                                                    background: isSelected ? '#eef2ff' : 'white',
+                                                    color: isSelected ? 'var(--primary)' : '#333',
+                                                    borderRadius: '8px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '13px',
+                                                    fontWeight: isSelected ? 'bold' : '500'
+                                                }}
+                                            >
+                                                {timeLabel}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
 
                 {/* Note about payment */}
-                <div style={{ padding: '15px', background: '#fff3cd', borderRadius: '8px', marginBottom: '20px', fontSize: '13px', color: '#856404' }}>
+                <div style={{ padding: '15px', background: '#fff3cd', borderRadius: '8px', marginBottom: '20px', marginTop: '20px', fontSize: '13px', color: '#856404' }}>
                     💡 Payment will be collected after the consultation
                 </div>
 
-                <button className="btn primary" onClick={handleBookAppointment} disabled={loading}>
-                    {loading ? 'Booking...' : 'Confirm Appointment'}
+                <button className="btn primary" onClick={handleBookAppointment} disabled={bookingLoading || !selectedSlotISO}>
+                    {bookingLoading ? 'Booking...' : 'Confirm Appointment'}
                 </button>
             </div>
         </div>

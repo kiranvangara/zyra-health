@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { supabase } from '../../utils/supabase';
+import { SPECIALIZATIONS } from '../../utils/constants';
 
 export default function DoctorSignup() {
     const router = useRouter();
@@ -84,13 +85,16 @@ export default function DoctorSignup() {
                 onChange={(e) => setPassword(e.target.value)}
             />
 
-            <input
-                type="text"
-                placeholder="Specialization (e.g., Cardiology)"
+            <select
                 className="input-box"
                 value={specialization}
                 onChange={(e) => setSpecialization(e.target.value)}
-            />
+            >
+                <option value="" disabled>Select Specialization</option>
+                {SPECIALIZATIONS.map(spec => (
+                    <option key={spec} value={spec}>{spec}</option>
+                ))}
+            </select>
 
             <input
                 type="number"

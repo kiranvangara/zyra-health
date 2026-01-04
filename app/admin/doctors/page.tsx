@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { getAllDoctors, updateDoctorVerification, updateDoctorFee, createDoctor, updateDoctorProfile } from '../actions';
 import { Plus, X, Pencil } from 'lucide-react';
 import { supabase } from '../../utils/supabase';
+import { SPECIALIZATIONS } from '../../utils/constants';
 
 interface Doctor {
     id: string;
@@ -327,11 +328,9 @@ export default function ManageDoctors() {
                                         value={formData.specialization}
                                         onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
                                     >
-                                        <option>General Physician</option>
-                                        <option>Cardiology</option>
-                                        <option>Dermatology</option>
-                                        <option>Pediatrics</option>
-                                        <option>Orthopedics</option>
+                                        {SPECIALIZATIONS.map(spec => (
+                                            <option key={spec} value={spec}>{spec}</option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
