@@ -8,7 +8,8 @@ export const getAvailableSpecializations = unstable_cache(
         // Fetch distinct specializations from doctors table
         const { data, error } = await supabase
             .from('doctors')
-            .select('specialization');
+            .select('specialization')
+            .eq('is_verified', true);
 
         if (error) {
             console.error('Error fetching specializations:', error);

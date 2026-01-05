@@ -89,3 +89,21 @@ export const LANGUAGES = [
     'English', 'Hindi', 'Bengali', 'Telugu', 'Marathi', 'Tamil',
     'Gujarati', 'Malayalam', 'Kannada', 'Punjabi'
 ].sort();
+
+export const COMMON_SYMPTOMS = [
+    'Fever',
+    'Cough',
+    'Headache',
+    'Stomach Ache',
+    'Skin Rash',
+    'Back Pain',
+    'Acne',
+    'Hair Loss',
+    'Anxiety',
+    'Depression',
+    'Cold & Flu',
+    'Diabetes',
+    'Acid Reflux',
+    'Joint Pain',
+    'Migraine'
+];
