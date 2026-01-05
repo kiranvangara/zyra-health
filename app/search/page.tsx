@@ -1,7 +1,7 @@
 'use client';
 import posthog from 'posthog-js';
 
-import { Search as SearchIcon, User } from 'lucide-react';
+import { Search as SearchIcon, User, MapPin, Star, Filter, ArrowRight } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -22,6 +22,7 @@ interface Doctor {
     profile_photo_url?: string;
     is_verified?: boolean;
     availability?: string;
+    languages_spoken?: string[];
 }
 
 export default function Search() {
@@ -97,14 +98,14 @@ export default function Search() {
     };
 
     const calculateAvailability = (appointments: any[]) => {
-        const slots = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
+        // Use a wider range of slots to ensure availability is found if present
+        const slots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'];
         const today = new Date();
 
         // Check next 3 days
         for (let i = 0; i < 3; i++) {
             const checkDate = new Date(today);
             checkDate.setDate(today.getDate() + i);
-            const dateStr = checkDate.toISOString().split('T')[0];
 
             for (const slot of slots) {
                 // Check if slot is in the future
@@ -114,27 +115,23 @@ export default function Search() {
 
                 if (slotTime <= new Date()) continue; // Skip past slots
 
-                // Check if slot is booked (Note: naive check, assumes exact match on API stored time which is usually UTC or offset. 
-                // For this MVP, assuming appts store standard format we can string match roughly or use standard date comparison)
-
-                // In booking page we store as: `${selectedDate}T${selectedTime}:00+05:30`
-                // Let's compare timestamps for robustness
+                // Check if slot is booked (Simple check for MVP)
                 const isBooked = appointments.some(appt => {
                     const apptTime = new Date(appt.scheduled_at);
-                    return Math.abs(apptTime.getTime() - slotTime.getTime()) < 5 * 60 * 1000; // Within 5 mins matching
+                    return Math.abs(apptTime.getTime() - slotTime.getTime()) < 5 * 60 * 1000;
                 });
 
                 if (!isBooked) {
-                    if (i === 0) return 'Available Today';
+                    const timeString = slotTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+                    if (i === 0) return `Available Today at ${timeString}`;
                     if (i === 1) return 'Available Tomorrow';
-                    return `Available ${checkDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
+                    return `Available ${checkDate.toLocaleDateString('en-US', { weekday: 'short' })}`;
                 }
             }
         }
         return 'Fully Booked';
     };
-
-
 
     // Inside component
     const handleSearch = () => {
@@ -179,143 +176,183 @@ export default function Search() {
     const specializations = ['All', ...availableSpecializations];
 
     return (
-        <div style={{ minHeight: '100vh', background: '#f8f9fa', paddingBottom: '60px' }}>
-            <div style={{
-                padding: '20px',
-                background: 'rgba(255, 255, 255, 0.8)',
-                position: 'sticky',
-                top: 0,
-                zIndex: 10,
-                backdropFilter: 'blur(12px)',
-                borderBottom: '1px solid rgba(0,0,0,0.05)'
-            }}>
-                <h2 style={{ margin: '0 0 15px 0' }}>Find a Doctor</h2>
-                <div style={{ position: 'relative' }}>
-                    <SearchIcon size={20} color="#999" style={{ position: 'absolute', left: '15px', top: '14px' }} />
+        <div style={{ minHeight: '100vh', background: '#F8FAFC', paddingBottom: '90px' }}>
+            {/* Glass Header */}
+            <div className="glass-header" style={{ padding: '12px 16px', background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(226, 232, 240, 0.6)' }}>
+                <h2 style={{ margin: '0 0 12px 0', fontSize: '22px', fontWeight: '700', color: '#0F172A' }}>Find a Doctor</h2>
+
+                {/* Search Box */}
+                <div style={{ position: 'relative', marginBottom: '12px' }}>
+                    <div style={{ position: 'absolute', left: '16px', top: '16px', pointerEvents: 'none' }}>
+                        <SearchIcon size={20} color="#94A3B8" />
+                    </div>
                     <input
                         type="text"
-                        placeholder="Search specialist, symptoms..."
+                        placeholder="Search doctors, specializations..."
                         className="input-box"
                         style={{
                             margin: 0,
-                            padding: '14px 14px 14px 45px',
-                            background: '#f4f6f8',
+                            padding: '16px 16px 16px 48px',
+                            background: '#F1F5F9',
                             border: 'none',
-                            borderRadius: '12px',
+                            borderRadius: '16px',
                             fontSize: '15px',
-                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+                            fontWeight: '500',
+                            color: '#0F172A',
+                            width: '100%',
+                            boxShadow: 'none',
+                            transition: 'all 0.2s ease'
                         }}
+                        onFocus={(e) => e.target.style.background = 'white'}
+                        onBlur={(e) => e.target.style.background = '#F1F5F9'}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
 
                 {/* Filters */}
-                <div style={{ display: 'flex', gap: '10px', marginTop: '15px', overflowX: 'auto', paddingBottom: '5px' }}>
+                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     {specializations.map(spec => (
-                        <div
+                        <button
                             key={spec}
                             onClick={() => setFilter(spec)}
                             style={{
                                 padding: '8px 16px',
                                 background: spec === filter ? 'var(--primary)' : 'white',
-                                color: spec === filter ? 'white' : '#333',
-                                border: '1px solid #ddd',
-                                borderRadius: '20px',
-                                fontSize: '12px',
+                                color: spec === filter ? 'white' : '#64748B',
+                                border: spec === filter ? '1px solid var(--primary)' : '1px solid #E2E8F0',
+                                borderRadius: '100px',
+                                fontSize: '13px',
+                                fontWeight: '600',
                                 whiteSpace: 'nowrap',
-                                cursor: 'pointer'
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                boxShadow: spec === filter ? '0 4px 12px rgba(37, 99, 235, 0.2)' : 'none'
                             }}>
                             {spec}
-                        </div>
+                        </button>
                     ))}
                 </div>
             </div>
 
-            <div style={{ padding: '20px' }}>
+            <div style={{ padding: '16px' }}>
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>Loading doctors...</div>
+                    <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                        <div className="pulsing-dot" style={{ width: '40px', height: '40px', background: 'var(--primary)', margin: '0 auto 20px', opacity: 0.2 }}></div>
+                        <div style={{ color: '#94A3B8', fontWeight: '500' }}>Finding best doctors...</div>
+                    </div>
                 ) : filteredDoctors.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>No doctors found</div>
+                    <div style={{ textAlign: 'center', padding: '60px 0', opacity: 0.8 }}>
+                        <div style={{ width: '80px', height: '80px', background: '#F1F5F9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                            <SearchIcon size={32} color="#CBD5E1" />
+                        </div>
+                        <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', marginBottom: '8px' }}>No doctors found</h3>
+                        <p style={{ color: '#64748B', fontSize: '14px' }}>Try adjusting your search or filters.</p>
+                    </div>
                 ) : (
-                    filteredDoctors.map(doc => (
-                        <div key={doc.id} className="card" onClick={() => router.push(`/doctor/${doc.id}`)} style={{
-                            cursor: 'pointer',
-                            border: 'none',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-                            borderRadius: '16px',
-                            padding: '16px',
-                            marginBottom: '12px',
-                            transition: 'transform 0.2s',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '12px'
-                        }}>
-                            <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start' }}>
-                                <div style={{
-                                    width: '60px', height: '60px',
-                                    background: '#eef', borderRadius: '50%',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: 'var(--primary)', overflow: 'hidden', flexShrink: 0,
-                                    border: '1px solid #eee'
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {filteredDoctors.map(doc => (
+                            <div
+                                key={doc.id}
+                                className="card"
+                                onClick={() => router.push(`/doctor/${doc.id}`)}
+                                style={{
+                                    cursor: 'pointer',
+                                    border: 'none',
+                                    background: 'white',
+                                    boxShadow: '0 2px 8px -1px rgba(0,0,0,0.05)',
+                                    borderRadius: '16px',
+                                    padding: '12px', // Ultra Compact padding
+                                    transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    position: 'relative',
+                                    overflow: 'hidden'
                                 }}>
-                                    {doc.profile_photo_url ? (
-                                        <img src={doc.profile_photo_url} alt={doc.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    ) : (
-                                        <User size={24} />
-                                    )}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', gap: '16px' }}>
                                     <div style={{
-                                        fontWeight: '600',
-                                        fontSize: '15px',
-                                        color: '#1a202c',
-                                        marginBottom: '2px',
-                                        lineHeight: '1.3'
+                                        width: '64px', height: '64px',
+                                        background: '#F8FAFC', borderRadius: '50%',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: '#CBD5E1', overflow: 'hidden', flexShrink: 0,
+                                        border: '1px solid #F1F5F9'
                                     }}>
-                                        {doc.display_name || 'Dr. Anonymous'}
-                                    </div>
-                                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#718096' }}>
-                                        {doc.specialization}
-                                    </div>
-                                    <div style={{ fontSize: '12px', color: '#a0aec0', marginTop: '1px' }}>
-                                        {doc.experience_years} Years Exp.
+                                        {doc.profile_photo_url ? (
+                                            <img src={doc.profile_photo_url} alt={doc.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <User size={32} />
+                                        )}
                                     </div>
 
-                                    {/* Availability Badge moved here */}
-                                    {doc.availability && (
-                                        <div style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            fontSize: '11px',
-                                            fontWeight: '600',
-                                            color: doc.availability.includes('Available') ? '#155724' : '#721c24',
-                                            background: doc.availability.includes('Available') ? '#d4edda' : '#f8d7da',
-                                            padding: '2px 8px',
-                                            borderRadius: '4px',
-                                            marginTop: '6px'
-                                        }}>
-                                            {doc.availability === 'Available Today' && <span className="pulsing-dot" style={{ width: '6px', height: '6px', marginRight: '4px' }}></span>}
-                                            {doc.availability}
+                                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}> {/* Included gap for vertical spacing */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <h3 style={{
+                                                fontSize: '16px', // Reduced from 17px
+                                                fontWeight: '600',
+                                                color: '#0F172A',
+                                                margin: 0,
+                                                lineHeight: '1.3',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis'
+                                            }}>
+                                                {doc.display_name || 'Dr. Anonymous'}
+                                            </h3>
+
+                                            {/* Removed Rating Section as requested */}
                                         </div>
-                                    )}
+
+                                        <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--primary)' }}>
+                                            {doc.specialization}
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                            <div style={{ fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <span style={{ fontWeight: '600', color: '#334155' }}>{doc.experience_years}+</span> Years Exp.
+                                            </div>
+
+                                            {doc.languages_spoken && doc.languages_spoken.length > 0 && (
+                                                <div style={{ fontSize: '13px', color: '#94A3B8' }}>
+                                                    • {doc.languages_spoken[0]}{doc.languages_spoken.length > 1 && ` +${doc.languages_spoken.length - 1}`}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Book Button */}
-                                <div>
-                                    <button className="btn primary" style={{
-                                        width: 'auto',
-                                        padding: '8px 16px',
-                                        fontSize: '12px',
-                                        height: '36px',
-                                        background: 'var(--primary)'
-                                    }}>
-                                        Book
-                                    </button>
+                                <div style={{
+                                    marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #F8FAFC',
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                }}>
+                                    <div>
+                                        {doc.availability && (
+                                            <div style={{
+                                                display: 'flex', alignItems: 'center', gap: '6px',
+                                                fontSize: '12px', fontWeight: '600',
+                                                color: doc.availability.includes('Available') ? '#059669' : '#DC2626',
+                                                background: doc.availability.includes('Available') ? '#ECFDF5' : '#FEF2F2',
+                                                padding: '6px 10px', borderRadius: '8px'
+                                            }}>
+                                                {doc.availability.includes('Today') && <div className="pulsing-dot" style={{ width: '6px', height: '6px', background: '#059669' }}></div>}
+                                                {doc.availability}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: '11px', fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase' }}>FEE</div>
+                                            <div style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>{getDisplayPrice(doc)}</div>
+                                        </div>
+                                        <button className="btn primary" style={{
+                                            padding: '10px 20px', borderRadius: '12px', fontSize: '13px', fontWeight: '600',
+                                            height: 'auto', display: 'flex', alignItems: 'center', gap: '6px'
+                                        }}>
+                                            Book <ArrowRight size={14} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
+                        ))}
+                    </div>
                 )}
             </div>
 
