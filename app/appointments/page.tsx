@@ -153,7 +153,9 @@ export default function Appointments() {
     };
 
     const upcomingAppointments = appointments.filter(a => isUpcoming(a.scheduled_at) && a.status !== 'cancelled');
-    const pastAppointments = appointments.filter(a => !isUpcoming(a.scheduled_at) || a.status === 'cancelled');
+    const pastAppointments = appointments
+        .filter(a => !isUpcoming(a.scheduled_at) || a.status === 'cancelled')
+        .sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime());
 
     if (loading) return <div style={{ minHeight: '100vh', background: '#F8FAFC' }}></div>;
 

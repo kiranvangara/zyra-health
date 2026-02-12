@@ -76,7 +76,7 @@ export default function Login() {
     return (
         <div style={{ padding: '40px', height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: '420px', margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                <h2 style={{ fontSize: '28px', marginBottom: '8px', color: 'var(--text-color)' }}>Welcome to ZyraHealth</h2>
+                <h2 style={{ fontSize: '28px', marginBottom: '8px', color: 'var(--text-color)' }}>Welcome to Medivera</h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Sign in to manage your health</p>
             </div>
 

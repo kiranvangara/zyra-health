@@ -301,7 +301,7 @@ export default function ManageDoctors() {
                                         <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>Email</label>
                                         <input
                                             className="input-box"
-                                            placeholder="email@zyra.com"
+                                            placeholder="email@medivera.com"
                                             type="email"
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}

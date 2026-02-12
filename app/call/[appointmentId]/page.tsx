@@ -45,7 +45,7 @@ export default function VideoCall() {
         <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000' }}>
             {/* Header */}
             <div style={{ padding: '15px', background: 'rgba(0,0,0,0.8)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontSize: '14px' }}>ZyraHealth Consultation</div>
+                <div style={{ fontSize: '14px' }}>Medivera Consultation</div>
                 <button
                     onClick={() => router.push('/appointments')}
                     style={{

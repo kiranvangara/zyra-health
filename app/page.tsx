@@ -48,12 +48,12 @@ export default function Splash() {
     }}>
       <Image
         src="/logo.png"
-        alt="ZyraHealth Logo"
+        alt="Medivera Logo"
         width={100}
         height={100}
         style={{ marginBottom: '20px' }}
       />
-      <h2 style={{ color: '#0047AB', margin: 0 }}>ZyraHealth</h2>
+      <h2 style={{ color: '#0047AB', margin: 0 }}>Medivera</h2>
       <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '20px', color: '#0047AB' }}>
         (Loading...)
       </div>

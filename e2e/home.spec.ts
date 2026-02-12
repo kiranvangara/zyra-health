@@ -10,11 +10,11 @@ test.describe('Home Page', () => {
         // Since we have a redirect flow (Splash -> Onboarding -> Login), we might land on Splash first.
 
         // Expect to see the app title or logo text
-        await expect(page).toHaveTitle(/ZyraHealth/);
+        await expect(page).toHaveTitle(/Medivera/);
 
         // Check for "Get Started" or similar button if on onboarding
         // Or check for "ZyraHealth" text
-        const heading = page.getByText('ZyraHealth').first();
+        const heading = page.getByText('Medivera').first();
         await expect(heading).toBeVisible();
     });
 

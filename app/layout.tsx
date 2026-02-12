@@ -29,7 +29,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "ZyraHealth - Global Healthcare for NRIs",
+  title: "Medivera - Global Healthcare for NRIs",
   description: "Connect with top Indian doctors for video consultations and prescriptions.",
   manifest: "/manifest.json",
 };

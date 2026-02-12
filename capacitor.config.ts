@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.zyrahealth.app',
-  appName: 'ZyraHealth',
+  appId: 'com.medivera.app',
+  appName: 'Medivera',
   webDir: 'out',
   server: {
     url: 'https://zyra-health.vercel.app',

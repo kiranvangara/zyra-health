@@ -24,7 +24,7 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
         const detectLocation = async () => {
             try {
                 // Check if already stored in session
-                const cached = sessionStorage.getItem('zyra_currency');
+                const cached = sessionStorage.getItem('medivera_currency');
                 if (cached === 'USD' || cached === 'INR') {
                     setCurrency(cached);
                     setLoading(false);
@@ -38,7 +38,7 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
                 const detectedCurrency = data.country_code === 'US' ? 'USD' : 'INR';
 
                 setCurrency(detectedCurrency);
-                sessionStorage.setItem('zyra_currency', detectedCurrency);
+                sessionStorage.setItem('medivera_currency', detectedCurrency);
             } catch (error) {
                 console.error('Error detecting location:', error);
                 // Default to INR

@@ -3,8 +3,8 @@ import posthog from 'posthog-js';
 
 import { Search as SearchIcon, User, MapPin, Star, Filter, ArrowRight } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '../utils/supabase';
 import { formatPrice } from '../../utils/formatPrice';
 import { getSpecializationForSymptom } from '../../utils/symptomMappings';
@@ -25,14 +25,20 @@ interface Doctor {
     languages_spoken?: string[];
 }
 
-export default function Search() {
+function SearchContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { currency } = useCurrency();
     const [doctors, setDoctors] = useState<Doctor[]>([]);
     const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('All');
-    const [searchTerm, setSearchTerm] = useState('');
+
+    // Initialize state from URL params
+    const initialSpec = searchParams.get('specialization');
+    const initialQuery = searchParams.get('q');
+
+    const [filter, setFilter] = useState(initialSpec || 'All');
+    const [searchTerm, setSearchTerm] = useState(initialQuery || '');
     const [availableSpecializations, setAvailableSpecializations] = useState<string[]>([]);
 
     useEffect(() => {
@@ -42,6 +48,15 @@ export default function Search() {
         };
         loadSpecs();
     }, []);
+
+    // Sync state with URL params
+    useEffect(() => {
+        const specParam = searchParams.get('specialization');
+        const queryParam = searchParams.get('q');
+
+        if (specParam && specParam !== filter) setFilter(specParam);
+        if (queryParam && queryParam !== searchTerm) setSearchTerm(queryParam);
+    }, [searchParams]);
 
     useEffect(() => {
         fetchDoctors();
@@ -146,6 +161,9 @@ export default function Search() {
         const symptomSpecialization = getSpecializationForSymptom(lowerTerm);
 
         const filtered = doctors.filter(doc => {
+            // Backup: Ensure specialization matches filter if set (handles race conditions)
+            if (filter !== 'All' && doc.specialization !== filter) return false;
+
             const nameMatch = doc.display_name?.toLowerCase().includes(lowerTerm);
             const specMatch = doc.specialization?.toLowerCase().includes(lowerTerm);
             const symptomMatch = symptomSpecialization && doc.specialization === symptomSpecialization;
@@ -358,5 +376,13 @@ export default function Search() {
 
             <BottomNav />
         </div>
+    );
+}
+
+export default function Search() {
+    return (
+        <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>}>
+            <SearchContent />
+        </Suspense>
     );
 }

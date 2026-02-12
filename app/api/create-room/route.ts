@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
                 'Authorization': `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-                name: `zyra-${appointmentId}`,
+                name: `medivera-${appointmentId}`,
                 properties: {
                     enable_screenshare: true,
                     enable_chat: true,

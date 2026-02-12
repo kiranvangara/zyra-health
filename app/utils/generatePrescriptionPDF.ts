@@ -22,13 +22,13 @@ export const generatePrescriptionPDF = (prescription: PrescriptionData) => {
     const pageWidth = doc.internal.pageSize.getWidth();
 
     // Header
-    doc.setFillColor(0, 71, 171); // Zyra Blue
+    doc.setFillColor(0, 71, 171); // Medivera Blue
     doc.rect(0, 0, pageWidth, 40, 'F');
 
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
-    doc.text('ZyraHealth', 20, 25);
+    doc.text('Medivera', 20, 25);
 
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
@@ -95,7 +95,7 @@ export const generatePrescriptionPDF = (prescription: PrescriptionData) => {
     doc.setFontSize(10);
     doc.setTextColor(150, 150, 150);
     doc.text('This is a digitally generated prescription.', 20, footerY);
-    doc.text('ZyraHealth • www.zyrahealth.com', 20, footerY + 5);
+    doc.text('Medivera • www.medivera.com', 20, footerY + 5);
 
     // Save
     doc.save(`Prescription_${prescription.created_at.split('T')[0]}.pdf`);

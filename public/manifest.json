@@ -1,6 +1,6 @@
 {
-  "name": "ZyraHealth",
-  "short_name": "Zyra",
+  "name": "Medivera",
+  "short_name": "Medivera",
   "description": "Global Healthcare App for NRIs",
   "start_url": "/",
   "display": "standalone",

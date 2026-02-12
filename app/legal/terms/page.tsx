@@ -24,15 +24,15 @@ export default function TermsAndConditions() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', lineHeight: '1.6', fontSize: '14px', color: '#333' }}>
                         <section>
                             <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>1. Agreement to Terms</h3>
-                            <p>By accessing our app, Zyra Health, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using or accessing this site.</p>
+                            <p>By accessing our app, Medivera, you agree to be bound by these Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, you are prohibited from using or accessing this site.</p>
                         </section>
 
                         <section>
                             <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>2. Medical Disclaimer</h3>
                             <p style={{ background: '#fff3cd', padding: '10px', borderRadius: '8px', borderLeft: '4px solid #ffc107' }}>
-                                <strong>Important:</strong> Zyra Health facilitates online consultations but is not a substitute for emergency medical care. If you are facing a medical emergency, please visit your nearest hospital immediately.
+                                <strong>Important:</strong> Medivera facilitates online consultations but is not a substitute for emergency medical care. If you are facing a medical emergency, please visit your nearest hospital immediately.
                             </p>
-                            <p style={{ marginTop: '10px' }}>Doctors on our platform are independent practitioners. Zyra Health does not directly provide medical services and is not liable for the outcome of consultations.</p>
+                            <p style={{ marginTop: '10px' }}>Doctors on our platform are independent practitioners. Medivera does not directly provide medical services and is not liable for the outcome of consultations.</p>
                         </section>
 
                         <section>
@@ -42,7 +42,7 @@ export default function TermsAndConditions() {
 
                         <section>
                             <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>4. Intellectual Property</h3>
-                            <p>The Service and its original content, features and functionality are and will remain the exclusive property of Zyra Health and its licensors.</p>
+                            <p>The Service and its original content, features and functionality are and will remain the exclusive property of Medivera and its licensors.</p>
                         </section>
 
                         <section>

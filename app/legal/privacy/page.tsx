@@ -24,7 +24,7 @@ export default function PrivacyPolicy() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', lineHeight: '1.6', fontSize: '14px', color: '#333' }}>
                         <section>
                             <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>1. Introduction</h3>
-                            <p>Welcome to Zyra Health. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our app and tell you about your privacy rights and how the law protects you.</p>
+                            <p>Welcome to Medivera. We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our app and tell you about your privacy rights and how the law protects you.</p>
                         </section>
 
                         <section>
@@ -54,7 +54,7 @@ export default function PrivacyPolicy() {
 
                         <section>
                             <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>5. Contact Us</h3>
-                            <p>If you have any questions about this privacy policy or our privacy practices, please contact us at support@zyrahealth.com.</p>
+                            <p>If you have any questions about this privacy policy or our privacy practices, please contact us at support@medivera.com.</p>
                         </section>
                     </div>
                 </div>

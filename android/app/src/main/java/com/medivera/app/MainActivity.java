@@ -1,4 +1,4 @@
-package com.zyrahealth.app;
+package com.medivera.app;
 
 import com.getcapacitor.BridgeActivity;
 

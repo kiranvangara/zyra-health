@@ -42,7 +42,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Sidebar */}
             <div style={{ width: '250px', background: '#1e293b', color: 'white', padding: '20px', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <LayoutDashboard size={24} /> Zyra Admin
+                    <LayoutDashboard size={24} /> Medivera Admin
                 </div>
 
                 <nav style={{ flex: 1 }}>
