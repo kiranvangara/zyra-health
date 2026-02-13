@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import CapacitorStorage from './capacitorStorage';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://isforydcyxhppjyxdlpi.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_yzDZ8ZVBtuSYRRVE2NmWdA_ME6uRMq4';
 
 // Check if we are in the browser context
 const isBrowser = typeof window !== 'undefined';
