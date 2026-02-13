@@ -6,6 +6,7 @@ import { CurrencyProvider } from "./context/CurrencyContext";
 import { CSPostHogProvider } from "./providers";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import CapacitorDeepLink from "./components/CapacitorDeepLink";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -40,27 +41,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
 
-  // This script handles the deep link callback for Capacitor
-  const capacitorScript = `
-    if (typeof window !== 'undefined' && window.Capacitor) {
-      window.Capacitor.Plugins.App.addListener('appUrlOpen', async (data) => {
-        const url = new URL(data.url);
-        
-        // If it's an auth redirect (contains hash with access_token)
-        if (url.hash && (url.hash.includes('access_token') || url.hash.includes('refresh_token'))) {
-            // Manually propagate the hash to the window location so Supabase picks it up
-            // AND force a navigation to the callback page to handle the exchange
-            window.location.href = '/auth/callback' + url.hash;
-        }
-      });
-    }
-  `;
+
 
   return (
     <html lang="en">
       <body className={`${outfit.variable} ${inter.variable}`}>
         <CurrencyProvider>
           <CSPostHogProvider>
+            <CapacitorDeepLink />
             {children}
             <SpeedInsights />
           </CSPostHogProvider>

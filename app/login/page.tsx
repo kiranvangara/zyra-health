@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
+import { Capacitor } from '@capacitor/core';
 
 export default function Login() {
     const router = useRouter();
@@ -54,23 +55,46 @@ export default function Login() {
     const handleSocialLogin = async (provider: 'google' | 'apple') => {
         setLoading(true);
 
-        let redirectTo = `${window.location.origin}/dashboard`;
+        try {
+            if (provider === 'google' && Capacitor.isNativePlatform()) {
+                const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
 
-        // Detect if running in Capacitor (Mobile App)
-        // @ts-ignore
-        if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform()) {
-            redirectTo = 'com.medivera.app://dashboard';
-        }
+                await GoogleAuth.initialize();
+                const googleUser = await GoogleAuth.signIn();
 
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider,
-            options: {
-                redirectTo,
-                skipBrowserRedirect: false // Ensure it opens browser
+                if (googleUser.authentication.idToken) {
+                    const { data, error } = await supabase.auth.signInWithIdToken({
+                        provider: 'google',
+                        token: googleUser.authentication.idToken,
+                    });
+
+                    if (error) throw error;
+                    if (data.session) {
+                        checkUserRoleAndRedirect(data.session.user.id);
+                    }
+                } else {
+                    throw new Error('No Google ID token found');
+                }
+            } else {
+                // Fallback to Web/Browser flow
+                let redirectTo = `${window.location.origin}/dashboard`;
+                if (Capacitor.isNativePlatform()) {
+                    redirectTo = 'com.medivera.app://dashboard';
+                }
+
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider,
+                    options: {
+                        redirectTo,
+                        skipBrowserRedirect: false
+                    }
+                });
+                if (error) throw error;
             }
-        });
-        if (error) setError(error.message);
-        setLoading(false);
+        } catch (error: any) {
+            setError(error.message || 'An error occurred during sign in');
+            setLoading(false);
+        }
     };
 
     return (
@@ -80,7 +104,8 @@ export default function Login() {
                 <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Sign in to manage your health</p>
             </div>
 
-            {error && <div style={{ padding: '12px', background: '#FEF2F2', color: '#991B1B', borderRadius: '12px', marginBottom: '20px', fontSize: '14px', textAlign: 'center' }}>{error}</div>}
+            {error && <div style={{ padding: '12px', background: '#FEF2F2', color: '#991B1B', borderRadius: '12px', marginBottom: '20px', fontSize: '14px', textAlign: 'center' }}>{error}</div>
+            }
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <input
@@ -168,6 +193,6 @@ export default function Login() {
                 {' • '}
                 <span onClick={() => router.push('/legal/terms')} style={{ cursor: 'pointer' }}>Terms & Conditions</span>
             </div>
-        </div>
+        </div >
     );
 }
