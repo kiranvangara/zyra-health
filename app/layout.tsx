@@ -33,6 +33,15 @@ export const metadata: Metadata = {
   title: "Medivera - Global Healthcare for NRIs",
   description: "Connect with top Indian doctors for video consultations and prescriptions.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+    other: {
+      rel: "apple-touch-icon-precomposed",
+      url: "/apple-touch-icon.png",
+    },
+  },
 };
 
 export default function RootLayout({
