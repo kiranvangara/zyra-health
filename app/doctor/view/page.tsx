@@ -1,7 +1,7 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '../../utils/supabase';
 import { ArrowLeft, User } from 'lucide-react';
 import { formatPrice } from '../../../utils/formatPrice';
@@ -23,22 +23,28 @@ interface DoctorProfile {
     profile_photo_url?: string;
 }
 
-export default function DoctorProfile() {
-    const params = useParams();
+function DoctorProfileContent() {
+    const searchParams = useSearchParams();
     const router = useRouter();
     const { currency } = useCurrency();
     const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchDoctor();
-    }, []);
+        const id = searchParams.get('id');
+        if (id) {
+            fetchDoctor(id);
+        } else {
+            // Handle missing ID if needed, or let loading state persist/error
+            setLoading(false);
+        }
+    }, [searchParams]);
 
-    const fetchDoctor = async () => {
+    const fetchDoctor = async (id: string) => {
         const { data, error } = await supabase
             .from('doctors')
             .select('*')
-            .eq('id', params.id)
+            .eq('id', id) // Use passed id
             .single();
 
         if (error || !data) {
@@ -147,12 +153,20 @@ export default function DoctorProfile() {
                 <button
                     className="btn primary"
                     style={{ marginTop: '20px', position: 'sticky', bottom: '20px', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                    onClick={() => router.push(`/booking/${doctor.id}`)}
+                    onClick={() => router.push(`/booking?doctorId=${doctor.id}`)}
                 >
                     Book Appointment
                 </button>
             </div>
         </div>
+    );
+}
+
+export default function DoctorProfile() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <DoctorProfileContent />
+        </Suspense>
     );
 }
 

@@ -182,7 +182,7 @@ export default function DoctorSchedule() {
                                                                 <button
                                                                     className="btn primary"
                                                                     style={{ width: 'auto', padding: '8px 12px', fontSize: '12px', borderRadius: '20px' }}
-                                                                    onClick={() => router.push(`/call/${item.id}`)}
+                                                                    onClick={() => router.push(`/call?appointmentId=${item.id}`)}
                                                                 >
                                                                     <Video size={14} style={{ marginRight: '5px' }} /> Join
                                                                 </button>
@@ -243,7 +243,7 @@ export default function DoctorSchedule() {
                                                         padding: '8px', borderRadius: '6px', border: '1px solid var(--primary)',
                                                         color: 'var(--primary)', background: '#eef2ff', fontSize: '12px', cursor: 'pointer'
                                                     }}
-                                                    onClick={() => router.push(`/doctor/rx-writer/${appt.id}`)} // Re-using writer for viewing/editing for now
+                                                    onClick={() => router.push(`/doctor/rx-writer?appointmentId=${appt.id}`)} // Re-using writer for viewing/editing for now
                                                 >
                                                     <FileText size={14} /> View Rx
                                                 </button>
@@ -254,7 +254,7 @@ export default function DoctorSchedule() {
                                                         padding: '8px', borderRadius: '6px', border: '1px solid #ddd',
                                                         color: '#666', background: 'white', fontSize: '12px', cursor: 'pointer'
                                                     }}
-                                                    onClick={() => router.push(`/doctor/rx-writer/${appt.id}`)}
+                                                    onClick={() => router.push(`/doctor/rx-writer?appointmentId=${appt.id}`)}
                                                 >
                                                     <Plus size={14} /> Write Rx
                                                 </button>

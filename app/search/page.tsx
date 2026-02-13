@@ -273,7 +273,7 @@ function SearchContent() {
                             <div
                                 key={doc.id}
                                 className="card"
-                                onClick={() => router.push(`/doctor/${doc.id}`)}
+                                onClick={() => router.push(`/doctor/view?id=${doc.id}`)}
                                 style={{
                                     cursor: 'pointer',
                                     border: 'none',

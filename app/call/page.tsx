@@ -1,24 +1,30 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { supabase } from '../../utils/supabase';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { supabase } from '../utils/supabase';
 
-export default function VideoCall() {
-    const params = useParams();
+function VideoCallContent() {
+    const searchParams = useSearchParams();
     const router = useRouter();
     const [appointment, setAppointment] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchAppointment();
-    }, []);
+        const appointmentId = searchParams.get('appointmentId');
+        if (appointmentId) {
+            fetchAppointment(appointmentId);
+        } else {
+            // Handle missing ID
+            setLoading(false);
+        }
+    }, [searchParams]);
 
-    const fetchAppointment = async () => {
+    const fetchAppointment = async (id: string) => {
         const { data, error } = await supabase
             .from('appointments')
             .select('*')
-            .eq('id', params.appointmentId)
+            .eq('id', id)
             .single();
 
         if (error || !data) {
@@ -40,6 +46,8 @@ export default function VideoCall() {
     if (loading) {
         return <div style={{ padding: '20px' }}>Loading video call...</div>;
     }
+
+    if (!appointment) return null;
 
     return (
         <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#000' }}>
@@ -73,5 +81,13 @@ export default function VideoCall() {
                 }}
             />
         </div>
+    );
+}
+
+export default function VideoCall() {
+    return (
+        <Suspense fallback={<div>Loading video call...</div>}>
+            <VideoCallContent />
+        </Suspense>
     );
 }

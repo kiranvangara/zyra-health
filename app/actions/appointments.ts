@@ -1,25 +1,11 @@
-'use server';
-
-import { createClient } from '@supabase/supabase-js';
 import { formatInTimeZone } from 'date-fns-tz';
-
-// Admin client for fetching user metadata (Patient Names)
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!,
-    {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
-        }
-    }
-);
+import { supabase } from '../utils/supabase';
 
 export async function getDoctorAppointments(doctorId: string, timeZone: string) {
     try {
         const today = new Date();
         // Fetch upcoming confirmed appointments
-        const { data: appts, error } = await supabaseAdmin
+        const { data: appts, error } = await supabase
             .from('appointments')
             .select('*')
             .eq('doctor_id', doctorId)
@@ -37,7 +23,7 @@ export async function getDoctorAppointments(doctorId: string, timeZone: string) 
             let patientName = 'Unknown Patient';
 
             // 1. Try fetching from public 'patients' table first (most reliable if profile exists)
-            const { data: patientProfile } = await supabaseAdmin
+            const { data: patientProfile } = await supabase
                 .from('patients')
                 .select('full_name')
                 .eq('id', a.patient_id)
@@ -46,13 +32,8 @@ export async function getDoctorAppointments(doctorId: string, timeZone: string) 
             if (patientProfile?.full_name) {
                 patientName = patientProfile.full_name;
             } else {
-                // 2. Fallback to Auth Metadata
-                const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(a.patient_id);
-                if (user?.user_metadata?.full_name) {
-                    patientName = user.user_metadata.full_name;
-                } else if (user?.email) {
-                    patientName = user.email;
-                }
+                // 2. Fallback (Client-side cannot access auth.admin)
+                patientName = 'Patient';
             }
 
             // Generate Display Time explicitly in Doctor's Timezone
@@ -78,7 +59,7 @@ export async function getDoctorAppointments(doctorId: string, timeZone: string) 
 
 export async function getPatientHistory(doctorId: string) {
     try {
-        const { data: appts, error } = await supabaseAdmin
+        const { data: appts, error } = await supabase
             .from('appointments')
             .select('*')
             .eq('doctor_id', doctorId)
@@ -89,7 +70,7 @@ export async function getPatientHistory(doctorId: string) {
         const enriched = await Promise.all(appts.map(async (a: any) => {
             let patientName = 'Patient';
             // 1. Try 'patients' table
-            const { data: patientProfile } = await supabaseAdmin
+            const { data: patientProfile } = await supabase
                 .from('patients')
                 .select('full_name')
                 .eq('id', a.patient_id)
@@ -98,12 +79,11 @@ export async function getPatientHistory(doctorId: string) {
             if (patientProfile?.full_name) {
                 patientName = patientProfile.full_name;
             } else {
-                // 2. Fallback to Auth
-                const { data: { user } } = await supabaseAdmin.auth.admin.getUserById(a.patient_id);
-                patientName = user?.user_metadata?.full_name || 'Patient';
+                // 2. Fallback 
+                patientName = 'Patient';
             }
 
-            const { count } = await supabaseAdmin
+            const { count } = await supabase
                 .from('prescriptions')
                 .select('*', { count: 'exact', head: true })
                 .eq('appointment_id', a.id);

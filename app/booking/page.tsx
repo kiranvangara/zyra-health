@@ -1,16 +1,16 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { supabase } from '../../utils/supabase';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { supabase } from '../utils/supabase';
 import posthog from 'posthog-js';
-import { getDoctorSlots } from '../../actions/availability';
-import { formatPrice } from '../../../utils/formatPrice';
-import { useCurrency } from '../../context/CurrencyContext';
+import { getDoctorSlots } from '../actions/availability';
+import { formatPrice } from '../../utils/formatPrice';
+import { useCurrency } from '../context/CurrencyContext';
 import { format, parseISO } from 'date-fns';
 
-export default function Booking() {
-    const params = useParams();
+function BookingContent() {
+    const searchParams = useSearchParams();
     const router = useRouter();
     const { currency } = useCurrency();
     const [doctor, setDoctor] = useState<any>(null);
@@ -28,7 +28,7 @@ export default function Booking() {
 
     useEffect(() => {
         init();
-    }, []);
+    }, [searchParams]);
 
     const init = async () => {
         // Check auth
@@ -39,11 +39,18 @@ export default function Booking() {
         }
         setUser(user);
 
+        const doctorId = searchParams.get('doctorId');
+        if (!doctorId) {
+            alert('Doctor ID missing');
+            router.back();
+            return;
+        }
+
         // Fetch doctor
         const { data } = await supabase
             .from('doctors')
             .select('*')
-            .eq('id', params.doctorId)
+            .eq('id', doctorId)
             .single();
 
         if (data) {
@@ -300,5 +307,13 @@ export default function Booking() {
                 </button>
             </div>
         </div>
+    );
+}
+
+export default function Booking() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <BookingContent />
+        </Suspense>
     );
 }
