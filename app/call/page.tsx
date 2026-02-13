@@ -11,13 +11,21 @@ function VideoCallContent() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const appointmentId = searchParams.get('appointmentId');
-        if (appointmentId) {
-            fetchAppointment(appointmentId);
-        } else {
-            // Handle missing ID
-            setLoading(false);
-        }
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push('/login');
+                return;
+            }
+
+            const appointmentId = searchParams.get('appointmentId');
+            if (appointmentId) {
+                fetchAppointment(appointmentId);
+            } else {
+                setLoading(false);
+            }
+        };
+        checkAuth();
     }, [searchParams]);
 
     const fetchAppointment = async (id: string) => {

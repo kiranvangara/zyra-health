@@ -59,7 +59,7 @@ export default function Login() {
         // Detect if running in Capacitor (Mobile App)
         // @ts-ignore
         if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform()) {
-            redirectTo = 'com.zyrahealth.app://dashboard';
+            redirectTo = 'com.medivera.app://dashboard';
         }
 
         const { error } = await supabase.auth.signInWithOAuth({
