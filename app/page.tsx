@@ -1,41 +1,52 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import Image from 'next/image';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from './utils/supabase';
+import LandingPage from './components/LandingPage';
 
 export default function Splash() {
   const router = useRouter();
+  const [showLanding, setShowLanding] = useState(false);
 
   useEffect(() => {
-    const checkSession = async () => {
-      // 1. Check for active Supabase session (Native Storage takes a moment)
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        router.replace('/dashboard');
-        return;
-      }
+    const checkSessionAndPlatform = async () => {
+      // 1. If Native App -> Always Auto-Redirect
+      if (Capacitor.isNativePlatform()) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          router.replace('/dashboard');
+          return;
+        }
 
-      // 2. Fallback to onboarding check
-      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-        const [name, value] = cookie.trim().split('=');
-        acc[name] = value;
-        return acc;
-      }, {} as Record<string, string>);
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          const [name, value] = cookie.trim().split('=');
+          acc[name] = value;
+          return acc;
+        }, {} as Record<string, string>);
 
-      if (cookies['onboarding_complete']) {
-        router.replace('/login');
+        if (cookies['onboarding_complete']) {
+          router.replace('/login');
+        } else {
+          router.replace('/onboarding');
+        }
       } else {
-        router.replace('/onboarding');
+        // 2. If Web -> Show Landing Page
+        // (Optional: You could still auto-redirect if logged in, but standard SaaS behavior is to show landing page)
+        setShowLanding(true);
       }
     };
 
-    // Check immediately without delay for faster load
-    checkSession();
+    checkSessionAndPlatform();
   }, [router]);
 
+  if (showLanding) {
+    return <LandingPage />;
+  }
+
+  // Splash Screen (Loading state for Web / Permanent state while redirecting for Native)
   return (
     <div style={{
       display: 'flex',
@@ -44,7 +55,7 @@ export default function Splash() {
       justifyContent: 'center',
       height: '100vh',
       background: 'white',
-      border: '4px solid #333' // Keeping the wireframe border aesthetic for now
+      // border: '4px solid #333' // Removed debug border for production look
     }}>
       <Image
         src="/logo.png"
@@ -54,9 +65,11 @@ export default function Splash() {
         style={{ marginBottom: '20px' }}
       />
       <h2 style={{ color: '#0047AB', margin: 0 }}>Medivera</h2>
-      <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '20px', color: '#0047AB' }}>
-        (Loading...)
-      </div>
+      {!showLanding && (
+        <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '20px', color: '#0047AB' }}>
+          (Loading...)
+        </div>
+      )}
     </div>
   );
 }
