@@ -171,6 +171,11 @@ function BookingContent() {
             alert('Appointment booked successfully!');
             router.push('/appointments');
         } catch (error: any) {
+            posthog.capture('booking_error', {
+                doctor_id: doctor.id,
+                error_message: error.message,
+                step: 'confirm',
+            });
             alert('Error creating appointment: ' + error.message);
             setBookingLoading(false);
         }
@@ -239,7 +244,14 @@ function BookingContent() {
                                         return (
                                             <div
                                                 key={dateStr}
-                                                onClick={() => setSelectedDate(dateStr)}
+                                                onClick={() => {
+                                                    setSelectedDate(dateStr);
+                                                    posthog.capture('booking_date_selected', {
+                                                        doctor_id: doctor.id,
+                                                        date: dateStr,
+                                                        available_slots_count: slotsByDate[dateStr]?.length || 0,
+                                                    });
+                                                }}
                                                 style={{
                                                     minWidth: '70px',
                                                     padding: '10px',
@@ -274,7 +286,17 @@ function BookingContent() {
                                         return (
                                             <div
                                                 key={isoString}
-                                                onClick={() => setSelectedSlotISO(isoString)}
+                                                onClick={() => {
+                                                    setSelectedSlotISO(isoString);
+                                                    const daysUntil = Math.round(
+                                                        (new Date(isoString).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                                                    );
+                                                    posthog.capture('booking_slot_selected', {
+                                                        doctor_id: doctor.id,
+                                                        slot_time: timeLabel,
+                                                        days_until_appointment: daysUntil,
+                                                    });
+                                                }}
                                                 style={{
                                                     padding: '12px',
                                                     textAlign: 'center',

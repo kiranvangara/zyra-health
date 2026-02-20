@@ -158,6 +158,11 @@ export default function Records() {
             if (dbError) throw dbError;
 
             alert('File uploaded successfully!');
+            posthog.capture('file_uploaded', {
+                file_type: selectedFile.type,
+                file_size: selectedFile.size,
+                title: fileTitle,
+            });
             setShowUploadModal(false);
             setSelectedFile(null);
             setFileTitle('');
@@ -186,6 +191,10 @@ export default function Records() {
         a.download = fileName;
         a.click();
         URL.revokeObjectURL(url);
+
+        posthog.capture('file_downloaded', {
+            file_name: fileName,
+        });
     };
 
     const formatDate = (dateString: string) => {
@@ -206,6 +215,11 @@ export default function Records() {
 
         setViewingUrl(data.signedUrl);
         setViewingFile(file);
+
+        posthog.capture('file_viewed', {
+            file_type: file.file_type,
+            file_name: file.file_name,
+        });
     };
 
 

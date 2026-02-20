@@ -1,5 +1,6 @@
 'use client';
 
+import posthog from 'posthog-js';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../utils/supabase';
@@ -86,6 +87,12 @@ export default function DoctorDashboard() {
             setStats({
                 patients: uniquePatients.size,
                 earnings: totalEarnings
+            });
+
+            posthog.capture('doctor_dashboard_viewed', {
+                doctor_id: user.id,
+                todays_appointments: appts?.length || 0,
+                total_patients: uniquePatients.size,
             });
         }
 

@@ -1,5 +1,6 @@
 'use client';
 
+import posthog from 'posthog-js';
 import BottomNav from '../components/BottomNav';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -88,6 +89,15 @@ export default function Appointments() {
         setRating(5);
         setComment('');
         setReviewModalOpen(true);
+
+        const daysSince = Math.round(
+            (Date.now() - new Date(appt.scheduled_at).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        posthog.capture('review_modal_opened', {
+            doctor_id: appt.doctor_id,
+            appointment_id: appt.id,
+            days_since_appointment: daysSince,
+        });
     };
 
     const submitReview = async () => {
@@ -107,6 +117,13 @@ export default function Appointments() {
         if (error) {
             alert('Error submitting review: ' + error.message);
         } else {
+            posthog.capture('review_submitted', {
+                doctor_id: selectedApptForReview.doctor_id,
+                appointment_id: selectedApptForReview.id,
+                rating,
+                has_comment: comment.trim().length > 0,
+                comment_length: comment.trim().length,
+            });
             alert('Review submitted for moderation!');
             setReviewModalOpen(false);
             // Optimistically update UI

@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabase';
 import { SPECIALIZATIONS, COMMON_SYMPTOMS } from '../constants/medical';
+import { getSpecializationForSymptom } from '../../utils/symptomMappings';
 
 export default function Dashboard() {
     const router = useRouter();
@@ -266,7 +267,13 @@ export default function Dashboard() {
                         {availableSpecializations.length > 0 ? availableSpecializations.map((spec, i) => (
                             <div
                                 key={spec}
-                                onClick={() => router.push(`/search?specialization=${encodeURIComponent(spec)}`)}
+                                onClick={() => {
+                                    posthog.capture('search_specialization_tapped', {
+                                        specialization: spec,
+                                        source: 'dashboard_tile',
+                                    });
+                                    router.push(`/search?specialization=${encodeURIComponent(spec)}`);
+                                }}
                                 style={{
                                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer',
                                     width: availableSpecializations.length > 8 ? '110px' : 'calc(25% - 9px)',
@@ -313,7 +320,14 @@ export default function Dashboard() {
                         {COMMON_SYMPTOMS.map((symptom, i) => (
                             <div
                                 key={symptom}
-                                onClick={() => router.push(`/search?q=${encodeURIComponent(symptom)}`)}
+                                onClick={() => {
+                                    posthog.capture('search_symptom_tapped', {
+                                        symptom,
+                                        mapped_specialization: getSpecializationForSymptom(symptom.toLowerCase()) || 'unknown',
+                                        source: 'dashboard_symptom',
+                                    });
+                                    router.push(`/search?q=${encodeURIComponent(symptom)}`);
+                                }}
                                 style={{
                                     background: 'white', padding: '10px', borderRadius: '12px',
                                     border: '1px solid #F1F5F9', boxShadow: '0 2px 5px rgba(0,0,0,0.03)',

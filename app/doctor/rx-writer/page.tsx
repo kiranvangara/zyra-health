@@ -1,5 +1,6 @@
 'use client';
 
+import posthog from 'posthog-js';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '../../utils/supabase';
@@ -71,6 +72,12 @@ function RxWriterContent() {
                 });
 
             if (error) throw error;
+
+            posthog.capture('rx_written', {
+                appointment_id: appointmentId,
+                medication_count: validMeds.length,
+                has_advice: !!advice.trim(),
+            });
 
             alert('Prescription signed & sent successfully!');
             router.push('/doctor/dashboard');

@@ -1,8 +1,10 @@
 'use client';
 
+import posthog from 'posthog-js';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '../utils/supabase';
+import { Capacitor } from '@capacitor/core';
 
 function VideoCallContent() {
     const searchParams = useSearchParams();
@@ -49,6 +51,16 @@ function VideoCallContent() {
 
         setAppointment(data);
         setLoading(false);
+
+        // Track call page opened
+        const minutesBefore = Math.round(
+            (new Date(data.scheduled_at).getTime() - Date.now()) / 60000
+        );
+        posthog.capture('call_page_opened', {
+            appointment_id: data.id,
+            minutes_before_scheduled: minutesBefore,
+            platform: Capacitor.isNativePlatform() ? 'native' : 'web',
+        });
     };
 
     if (loading) {

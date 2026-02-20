@@ -1,5 +1,6 @@
 'use client';
 
+import posthog from 'posthog-js';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
@@ -50,6 +51,14 @@ export default function ProfileSetup() {
             alert('Error saving profile: ' + error.message);
             setLoading(false);
         } else {
+            const fieldsFilled = [age, bloodGroup, conditions, medications].filter(v => v.trim() !== '').length;
+            posthog.capture('profile_setup_completed', {
+                fields_filled: fieldsFilled,
+                has_age: age.trim() !== '',
+                has_blood_group: bloodGroup.trim() !== '',
+                has_conditions: conditions.trim() !== '',
+                has_medications: medications.trim() !== '',
+            });
             router.push('/dashboard');
         }
     };
@@ -62,6 +71,7 @@ export default function ProfileSetup() {
             .from('patients')
             .insert({ id: user.id });
 
+        posthog.capture('profile_setup_skipped');
         router.push('/dashboard');
     };
 

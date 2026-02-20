@@ -1,5 +1,6 @@
 'use client';
 
+import posthog from 'posthog-js';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '../../utils/supabase';
@@ -55,6 +56,14 @@ function DoctorProfileContent() {
 
         setDoctor(data);
         setLoading(false);
+
+        posthog.capture('doctor_profile_viewed', {
+            doctor_id: data.id,
+            doctor_name: data.display_name,
+            specialization: data.specialization,
+            consultation_fee: data.consultation_fee,
+            experience_years: data.experience_years,
+        });
     };
 
     const getDisplayPrice = () => {
@@ -153,7 +162,15 @@ function DoctorProfileContent() {
                 <button
                     className="btn primary"
                     style={{ marginTop: '20px', position: 'sticky', bottom: '20px', zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                    onClick={() => router.push(`/booking?doctorId=${doctor.id}`)}
+                    onClick={() => {
+                        posthog.capture('doctor_book_cta_clicked', {
+                            doctor_id: doctor.id,
+                            doctor_name: doctor.display_name,
+                            specialization: doctor.specialization,
+                            consultation_fee: doctor.consultation_fee,
+                        });
+                        router.push(`/booking?doctorId=${doctor.id}`);
+                    }}
                 >
                     Book Appointment
                 </button>

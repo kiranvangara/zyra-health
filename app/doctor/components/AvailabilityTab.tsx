@@ -1,5 +1,6 @@
 'use client';
 
+import posthog from 'posthog-js';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../utils/supabase';
 import { Clock, Plus, Trash2, Save } from 'lucide-react';
@@ -73,6 +74,11 @@ export default function AvailabilityTab() {
             .eq('id', user.id);
 
         if (!error) {
+            const totalSlots = Object.values(schedule).reduce((sum: number, shifts: any) => sum + shifts.length, 0);
+            posthog.capture('doctor_availability_updated', {
+                doctor_id: user.id,
+                total_weekly_slots: totalSlots,
+            });
             alert('Schedule updated successfully! ✅');
         } else {
             alert('Failed to update: ' + error.message);

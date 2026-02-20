@@ -4,7 +4,7 @@ import posthog from 'posthog-js';
 import { Search as SearchIcon, User, MapPin, Star, Filter, ArrowRight } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { supabase } from '../utils/supabase';
 import { formatPrice } from '../../utils/formatPrice';
 import { getSpecializationForSymptom } from '../../utils/symptomMappings';
@@ -40,6 +40,12 @@ function SearchContent() {
     const [filter, setFilter] = useState(initialSpec || 'All');
     const [searchTerm, setSearchTerm] = useState(initialQuery || '');
     const [availableSpecializations, setAvailableSpecializations] = useState<string[]>([]);
+
+    // Analytics: debounce timer + entry point tracking
+    const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+    const entryPointRef = useRef<string>(
+        initialQuery ? 'url_param' : initialSpec ? 'url_param' : 'text_search'
+    );
 
     useEffect(() => {
         const loadSpecs = async () => {
@@ -148,6 +154,31 @@ function SearchContent() {
         return 'Fully Booked';
     };
 
+    // Debounced analytics logging (500ms)
+    const logSearchAnalytics = useCallback((query: string, resultCount: number, filterSpec: string, entryPoint: string) => {
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+        }
+        searchDebounceRef.current = setTimeout(() => {
+            const hasResults = resultCount > 0;
+            const eventProps = {
+                query: query.trim(),
+                filter_specialization: filterSpec,
+                result_count: resultCount,
+                has_results: hasResults,
+                entry_point: entryPoint,
+            };
+
+            // Log the search event
+            posthog.capture('search_performed', eventProps);
+
+            // Explicit zero-result event for gap analysis
+            if (!hasResults && (query.trim() || filterSpec !== 'All')) {
+                posthog.capture('search_zero_results', eventProps);
+            }
+        }, 500);
+    }, []);
+
     // Inside component
     const handleSearch = () => {
         if (!searchTerm.trim() && filter === 'All') {
@@ -170,13 +201,11 @@ function SearchContent() {
             return nameMatch || specMatch || symptomMatch;
         });
 
-        // Track Search Event
-        if (searchTerm.trim()) {
-            posthog.capture('search_performed', {
-                query: searchTerm,
-                result_count: filtered.length,
-                filter_specialization: filter
-            });
+        // Track Search Event (debounced)
+        if (searchTerm.trim() || filter !== 'All') {
+            logSearchAnalytics(searchTerm, filtered.length, filter, entryPointRef.current);
+            // Reset entry point after logging — subsequent searches are text_search
+            entryPointRef.current = 'text_search';
         }
 
         setFilteredDoctors(filtered);
@@ -233,7 +262,14 @@ function SearchContent() {
                     {specializations.map(spec => (
                         <button
                             key={spec}
-                            onClick={() => setFilter(spec)}
+                            onClick={() => {
+                                entryPointRef.current = 'filter_click';
+                                posthog.capture('search_filter_selected', {
+                                    specialization: spec,
+                                    previous_filter: filter,
+                                });
+                                setFilter(spec);
+                            }}
                             style={{
                                 padding: '8px 16px',
                                 background: spec === filter ? 'var(--primary)' : 'white',
@@ -273,7 +309,18 @@ function SearchContent() {
                             <div
                                 key={doc.id}
                                 className="card"
-                                onClick={() => router.push(`/doctor/view?id=${doc.id}`)}
+                                onClick={() => {
+                                    posthog.capture('search_doctor_clicked', {
+                                        doctor_id: doc.id,
+                                        doctor_specialization: doc.specialization,
+                                        doctor_name: doc.display_name,
+                                        search_query: searchTerm,
+                                        filter_specialization: filter,
+                                        position_in_results: filteredDoctors.indexOf(doc) + 1,
+                                        total_results: filteredDoctors.length,
+                                    });
+                                    router.push(`/doctor/view?id=${doc.id}`);
+                                }}
                                 style={{
                                     cursor: 'pointer',
                                     border: 'none',

@@ -1,22 +1,59 @@
 'use client';
 
+import posthog from 'posthog-js';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 export default function LandingPage() {
-    const router = useRouter();
-    const [scrollY, setScrollY] = useState(0);
+  const router = useRouter();
+  const [scrollY, setScrollY] = useState(0);
 
-    useEffect(() => {
-        const handleScroll = () => setScrollY(window.scrollY);
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+  // Track CTA clicks with a reusable helper
+  const trackCta = useCallback((ctaLabel: string, destination: string) => {
+    posthog.capture('landing_cta_clicked', { cta_text: ctaLabel, destination });
+    router.push(destination);
+  }, [router]);
 
-    return (
-        <div style={{ '--scroll': scrollY } as React.CSSProperties}>
-            <style>{`
+  useEffect(() => {
+    // Track landing page view
+    const params = new URLSearchParams(window.location.search);
+    posthog.capture('landing_page_viewed', {
+      referrer: document.referrer || 'direct',
+      utm_source: params.get('utm_source') || undefined,
+      utm_medium: params.get('utm_medium') || undefined,
+      utm_campaign: params.get('utm_campaign') || undefined,
+    });
+
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // Track section visibility via IntersectionObserver
+    const sections = ['features', 'how-it-works', 'testimonials', 'cta-section'];
+    const viewedSections = new Set<string>();
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !viewedSections.has(entry.target.id)) {
+          viewedSections.add(entry.target.id);
+          posthog.capture('landing_section_viewed', { section: entry.target.id });
+        }
+      });
+    }, { threshold: 0.3 });
+
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
+    };
+  }, []);
+
+  return (
+    <div style={{ '--scroll': scrollY } as React.CSSProperties}>
+      <style>{`
         /* ============================================
            LANDING PAGE STYLES
            ============================================ */
@@ -642,268 +679,268 @@ export default function LandingPage() {
         }
       `}</style>
 
-            <div className="landing-root">
-                {/* ===== NAVBAR ===== */}
-                <nav className="landing-nav">
-                    <div className="nav-logo">
-                        <Image src="/logo.png" alt="Medivera" width={32} height={32} />
-                        <span>Medivera</span>
-                    </div>
-                    <div className="nav-links">
-                        <button className="nav-link" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>Features</button>
-                        <button className="nav-link" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}>How It Works</button>
-                        <button className="nav-link" onClick={() => router.push('/login')}>Log in</button>
-                        <button className="nav-cta" onClick={() => router.push('/signup')}>Get Started Free</button>
-                    </div>
-                </nav>
+      <div className="landing-root">
+        {/* ===== NAVBAR ===== */}
+        <nav className="landing-nav">
+          <div className="nav-logo">
+            <Image src="/logo.png" alt="Medivera" width={32} height={32} />
+            <span>Medivera</span>
+          </div>
+          <div className="nav-links">
+            <button className="nav-link" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>Features</button>
+            <button className="nav-link" onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}>How It Works</button>
+            <button className="nav-link" onClick={() => router.push('/login')}>Log in</button>
+            <button className="nav-cta" onClick={() => trackCta('Get Started Free', '/signup')}>Get Started Free</button>
+          </div>
+        </nav>
 
-                {/* ===== HERO ===== */}
-                <section className="hero">
-                    <div className="hero-bg" />
-                    <div className="hero-blob-1" />
-                    <div className="hero-blob-2" />
-                    <div className="hero-blob-3" />
-                    <div className="hero-content">
-                        <div className="hero-badge">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
-                            Trusted by 10,000+ NRIs worldwide
-                        </div>
-                        <h1 className="hero-title">
-                            World-class Indian doctors,
-                            <br />
-                            <span className="hero-title-accent">wherever you call home.</span>
-                        </h1>
-                        <p className="hero-sub">
-                            Skip the wait. Consult top Indian specialists via HD video — get prescriptions, second opinions, and care in your language, on your schedule.
-                        </p>
-                        <div className="hero-actions">
-                            <button className="hero-btn-primary" onClick={() => router.push('/signup')}>
-                                Book a Consultation
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
-                            </button>
-                            <button className="hero-btn-secondary" onClick={() => router.push('/search')}>
-                                Browse Doctors
-                            </button>
-                        </div>
-                        <div className="hero-stats">
-                            <div>
-                                <div className="hero-stat-value">500+</div>
-                                <div className="hero-stat-label">Verified Doctors</div>
-                            </div>
-                            <div>
-                                <div className="hero-stat-value">50k+</div>
-                                <div className="hero-stat-label">Consultations</div>
-                            </div>
-                            <div>
-                                <div className="hero-stat-value">4.9</div>
-                                <div className="hero-stat-label">Patient Rating</div>
-                            </div>
-                            <div>
-                                <div className="hero-stat-value">12+</div>
-                                <div className="hero-stat-label">Countries</div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* ===== TRUST BAR ===== */}
-                <div className="trust-bar">
-                    <div className="trust-label">Trusted by families across</div>
-                    <div className="trust-logos">
-                        <span className="trust-logo">🇺🇸 United States</span>
-                        <span className="trust-logo">🇬🇧 United Kingdom</span>
-                        <span className="trust-logo">🇨🇦 Canada</span>
-                        <span className="trust-logo">🇦🇺 Australia</span>
-                        <span className="trust-logo">🇦🇪 UAE</span>
-                        <span className="trust-logo">🇸🇬 Singapore</span>
-                    </div>
-                </div>
-
-                {/* ===== FEATURES ===== */}
-                <section className="features" id="features">
-                    <div className="features-header">
-                        <div className="features-label">Why Medivera</div>
-                        <h2 className="features-title">Healthcare that crosses borders</h2>
-                        <p className="features-sub">
-                            We bring the expertise of India's finest medical professionals to your fingertips, no matter where you are in the world.
-                        </p>
-                    </div>
-                    <div className="features-grid">
-                        <div className="feature-card" style={{ '--card-accent': '#2563EB' } as React.CSSProperties}>
-                            <div className="feature-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
-                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></svg>
-                            </div>
-                            <div className="feature-card-title">HD Video Consultations</div>
-                            <div className="feature-card-desc">Crystal-clear video calls with specialists. Share your screen, upload reports, and get real-time medical guidance.</div>
-                        </div>
-                        <div className="feature-card" style={{ '--card-accent': '#7C3AED' } as React.CSSProperties}>
-                            <div className="feature-icon" style={{ background: '#F3E8FF', color: '#7C3AED' }}>
-                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
-                            </div>
-                            <div className="feature-card-title">Digital Prescriptions</div>
-                            <div className="feature-card-desc">Receive legally valid, signed digital prescriptions. Download PDF instantly or share with your local pharmacy.</div>
-                        </div>
-                        <div className="feature-card" style={{ '--card-accent': '#059669' } as React.CSSProperties}>
-                            <div className="feature-icon" style={{ background: '#ECFDF5', color: '#059669' }}>
-                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
-                            </div>
-                            <div className="feature-card-title">Cross-Border Care</div>
-                            <div className="feature-card-desc">Automatic timezone conversion, multi-currency payments, and doctors who speak your language.</div>
-                        </div>
-                        <div className="feature-card" style={{ '--card-accent': '#DC2626' } as React.CSSProperties}>
-                            <div className="feature-icon" style={{ background: '#FEF2F2', color: '#DC2626' }}>
-                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-                            </div>
-                            <div className="feature-card-title">Verified Specialists</div>
-                            <div className="feature-card-desc">Every doctor is credential-verified. Board-certified specialists with 10+ years of experience on average.</div>
-                        </div>
-                        <div className="feature-card" style={{ '--card-accent': '#D97706' } as React.CSSProperties}>
-                            <div className="feature-icon" style={{ background: '#FFFBEB', color: '#D97706' }}>
-                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                            </div>
-                            <div className="feature-card-title">Skip the Wait</div>
-                            <div className="feature-card-desc">No more 2-week waits for a GP. Book same-day or next-day consultations with top Indian doctors in minutes.</div>
-                        </div>
-                        <div className="feature-card" style={{ '--card-accent': '#0891B2' } as React.CSSProperties}>
-                            <div className="feature-icon" style={{ background: '#ECFEFF', color: '#0891B2' }}>
-                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                            </div>
-                            <div className="feature-card-title">Your Language</div>
-                            <div className="feature-card-desc">Consult in Hindi, Tamil, Telugu, Bengali, or English. Communicate with doctors who understand your cultural context.</div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* ===== HOW IT WORKS ===== */}
-                <section className="how-it-works" id="how-it-works">
-                    <div className="how-header">
-                        <div className="features-label">Simple Process</div>
-                        <h2 className="features-title">Your consultation, in 4 easy steps</h2>
-                        <p className="features-sub">From booking to prescription — we've made every step seamless.</p>
-                    </div>
-                    <div className="how-steps">
-                        <div className="how-step">
-                            <div className="how-step-num">1</div>
-                            <div className="how-step-title">Search</div>
-                            <div className="how-step-desc">Find a specialist by condition, language, or availability.</div>
-                        </div>
-                        <div className="how-step">
-                            <div className="how-step-num">2</div>
-                            <div className="how-step-title">Book</div>
-                            <div className="how-step-desc">Pick a time slot in your timezone. Pay securely online.</div>
-                        </div>
-                        <div className="how-step">
-                            <div className="how-step-num">3</div>
-                            <div className="how-step-title">Consult</div>
-                            <div className="how-step-desc">Join an HD video call. Share reports and discuss your health.</div>
-                        </div>
-                        <div className="how-step">
-                            <div className="how-step-num">4</div>
-                            <div className="how-step-title">Prescription</div>
-                            <div className="how-step-desc">Receive a digital prescription. Download, share, or print.</div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* ===== TESTIMONIALS ===== */}
-                <section className="testimonials">
-                    <div className="features-header">
-                        <div className="features-label">Patient Stories</div>
-                        <h2 className="features-title">Loved by patients worldwide</h2>
-                        <p className="features-sub">Real stories from real people who found care without borders.</p>
-                    </div>
-                    <div className="testimonials-grid">
-                        <div className="testimonial-card">
-                            <div className="testimonial-stars">★★★★★</div>
-                            <div className="testimonial-text">"My mother in Toronto had a skin issue and waited 6 weeks for a dermatologist. On Medivera, she saw one the same day. The doctor spoke Tamil, which made her so comfortable."</div>
-                            <div className="testimonial-author">
-                                <div className="testimonial-avatar">P</div>
-                                <div>
-                                    <div className="testimonial-name">Priya Raghavan</div>
-                                    <div className="testimonial-location">Toronto, Canada</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="testimonial-card">
-                            <div className="testimonial-stars">★★★★★</div>
-                            <div className="testimonial-text">"Got a second opinion on my father's heart report from a cardiologist in Mumbai. The doctor was thorough, reviewed all reports on the video call, and gave us peace of mind."</div>
-                            <div className="testimonial-author">
-                                <div className="testimonial-avatar">R</div>
-                                <div>
-                                    <div className="testimonial-name">Rahul Menon</div>
-                                    <div className="testimonial-location">London, UK</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="testimonial-card">
-                            <div className="testimonial-stars">★★★★★</div>
-                            <div className="testimonial-text">"As an NRI in the US, finding a doctor who understands Indian dietary habits and lifestyle was impossible. Medivera solved that. The prescription was ready in 10 minutes."</div>
-                            <div className="testimonial-author">
-                                <div className="testimonial-avatar">A</div>
-                                <div>
-                                    <div className="testimonial-name">Ananya Sharma</div>
-                                    <div className="testimonial-location">New Jersey, USA</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* ===== CTA ===== */}
-                <section className="cta-section">
-                    <div className="cta-bg" />
-                    <div className="cta-glow-1" />
-                    <div className="cta-glow-2" />
-                    <div className="cta-content">
-                        <h2 className="cta-title">Your health shouldn't wait for borders</h2>
-                        <p className="cta-sub">Join thousands of patients who've found trusted care from anywhere in the world. Your first consultation is just a click away.</p>
-                        <button className="cta-btn" onClick={() => router.push('/signup')}>
-                            Get Started — It's Free
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
-                        </button>
-                    </div>
-                </section>
-
-                {/* ===== FOOTER ===== */}
-                <footer className="landing-footer">
-                    <div className="footer-grid">
-                        <div>
-                            <div className="nav-logo" style={{ marginBottom: '4px' }}>
-                                <Image src="/logo.png" alt="Medivera" width={28} height={28} />
-                                <span style={{ fontFamily: 'var(--font-outfit)', fontSize: '20px', fontWeight: 700, color: 'white' }}>Medivera</span>
-                            </div>
-                            <div className="footer-brand-desc">
-                                Global digital healthcare for the Indian diaspora. Connecting patients with trusted specialists, anywhere in the world.
-                            </div>
-                        </div>
-                        <div>
-                            <div className="footer-col-title">Product</div>
-                            <span className="footer-link" onClick={() => router.push('/search')}>Find Doctors</span>
-                            <span className="footer-link" onClick={() => router.push('/signup')}>Sign Up</span>
-                            <span className="footer-link" onClick={() => router.push('/login')}>Patient Login</span>
-                            <span className="footer-link" onClick={() => router.push('/doctor/login')}>Doctor Login</span>
-                        </div>
-                        <div>
-                            <div className="footer-col-title">Company</div>
-                            <span className="footer-link">About Us</span>
-                            <span className="footer-link">Careers</span>
-                            <span className="footer-link">Blog</span>
-                            <span className="footer-link">Contact</span>
-                        </div>
-                        <div>
-                            <div className="footer-col-title">Legal</div>
-                            <span className="footer-link" onClick={() => router.push('/legal/privacy')}>Privacy Policy</span>
-                            <span className="footer-link" onClick={() => router.push('/legal/terms')}>Terms of Service</span>
-                            <span className="footer-link">Disclaimer</span>
-                            <span className="footer-link">HIPAA</span>
-                        </div>
-                    </div>
-                    <div className="footer-bottom">
-                        <span>© {new Date().getFullYear()} Medivera Health Inc. All rights reserved.</span>
-                        <span>Built with ❤️ for the global Indian community</span>
-                    </div>
-                </footer>
+        {/* ===== HERO ===== */}
+        <section className="hero">
+          <div className="hero-bg" />
+          <div className="hero-blob-1" />
+          <div className="hero-blob-2" />
+          <div className="hero-blob-3" />
+          <div className="hero-content">
+            <div className="hero-badge">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+              Trusted by 10,000+ NRIs worldwide
             </div>
+            <h1 className="hero-title">
+              World-class Indian doctors,
+              <br />
+              <span className="hero-title-accent">wherever you call home.</span>
+            </h1>
+            <p className="hero-sub">
+              Skip the wait. Consult top Indian specialists via HD video — get prescriptions, second opinions, and care in your language, on your schedule.
+            </p>
+            <div className="hero-actions">
+              <button className="hero-btn-primary" onClick={() => trackCta('Book a Consultation', '/signup')}>
+                Book a Consultation
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+              </button>
+              <button className="hero-btn-secondary" onClick={() => trackCta('Browse Doctors', '/search')}>
+                Browse Doctors
+              </button>
+            </div>
+            <div className="hero-stats">
+              <div>
+                <div className="hero-stat-value">500+</div>
+                <div className="hero-stat-label">Verified Doctors</div>
+              </div>
+              <div>
+                <div className="hero-stat-value">50k+</div>
+                <div className="hero-stat-label">Consultations</div>
+              </div>
+              <div>
+                <div className="hero-stat-value">4.9</div>
+                <div className="hero-stat-label">Patient Rating</div>
+              </div>
+              <div>
+                <div className="hero-stat-value">12+</div>
+                <div className="hero-stat-label">Countries</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== TRUST BAR ===== */}
+        <div className="trust-bar">
+          <div className="trust-label">Trusted by families across</div>
+          <div className="trust-logos">
+            <span className="trust-logo">🇺🇸 United States</span>
+            <span className="trust-logo">🇬🇧 United Kingdom</span>
+            <span className="trust-logo">🇨🇦 Canada</span>
+            <span className="trust-logo">🇦🇺 Australia</span>
+            <span className="trust-logo">🇦🇪 UAE</span>
+            <span className="trust-logo">🇸🇬 Singapore</span>
+          </div>
         </div>
-    );
+
+        {/* ===== FEATURES ===== */}
+        <section className="features" id="features">
+          <div className="features-header">
+            <div className="features-label">Why Medivera</div>
+            <h2 className="features-title">Healthcare that crosses borders</h2>
+            <p className="features-sub">
+              We bring the expertise of India's finest medical professionals to your fingertips, no matter where you are in the world.
+            </p>
+          </div>
+          <div className="features-grid">
+            <div className="feature-card" style={{ '--card-accent': '#2563EB' } as React.CSSProperties}>
+              <div className="feature-icon" style={{ background: '#EFF6FF', color: '#2563EB' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></svg>
+              </div>
+              <div className="feature-card-title">HD Video Consultations</div>
+              <div className="feature-card-desc">Crystal-clear video calls with specialists. Share your screen, upload reports, and get real-time medical guidance.</div>
+            </div>
+            <div className="feature-card" style={{ '--card-accent': '#7C3AED' } as React.CSSProperties}>
+              <div className="feature-icon" style={{ background: '#F3E8FF', color: '#7C3AED' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+              </div>
+              <div className="feature-card-title">Digital Prescriptions</div>
+              <div className="feature-card-desc">Receive legally valid, signed digital prescriptions. Download PDF instantly or share with your local pharmacy.</div>
+            </div>
+            <div className="feature-card" style={{ '--card-accent': '#059669' } as React.CSSProperties}>
+              <div className="feature-icon" style={{ background: '#ECFDF5', color: '#059669' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+              </div>
+              <div className="feature-card-title">Cross-Border Care</div>
+              <div className="feature-card-desc">Automatic timezone conversion, multi-currency payments, and doctors who speak your language.</div>
+            </div>
+            <div className="feature-card" style={{ '--card-accent': '#DC2626' } as React.CSSProperties}>
+              <div className="feature-icon" style={{ background: '#FEF2F2', color: '#DC2626' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+              </div>
+              <div className="feature-card-title">Verified Specialists</div>
+              <div className="feature-card-desc">Every doctor is credential-verified. Board-certified specialists with 10+ years of experience on average.</div>
+            </div>
+            <div className="feature-card" style={{ '--card-accent': '#D97706' } as React.CSSProperties}>
+              <div className="feature-icon" style={{ background: '#FFFBEB', color: '#D97706' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+              </div>
+              <div className="feature-card-title">Skip the Wait</div>
+              <div className="feature-card-desc">No more 2-week waits for a GP. Book same-day or next-day consultations with top Indian doctors in minutes.</div>
+            </div>
+            <div className="feature-card" style={{ '--card-accent': '#0891B2' } as React.CSSProperties}>
+              <div className="feature-icon" style={{ background: '#ECFEFF', color: '#0891B2' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+              </div>
+              <div className="feature-card-title">Your Language</div>
+              <div className="feature-card-desc">Consult in Hindi, Tamil, Telugu, Bengali, or English. Communicate with doctors who understand your cultural context.</div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== HOW IT WORKS ===== */}
+        <section className="how-it-works" id="how-it-works">
+          <div className="how-header">
+            <div className="features-label">Simple Process</div>
+            <h2 className="features-title">Your consultation, in 4 easy steps</h2>
+            <p className="features-sub">From booking to prescription — we've made every step seamless.</p>
+          </div>
+          <div className="how-steps">
+            <div className="how-step">
+              <div className="how-step-num">1</div>
+              <div className="how-step-title">Search</div>
+              <div className="how-step-desc">Find a specialist by condition, language, or availability.</div>
+            </div>
+            <div className="how-step">
+              <div className="how-step-num">2</div>
+              <div className="how-step-title">Book</div>
+              <div className="how-step-desc">Pick a time slot in your timezone. Pay securely online.</div>
+            </div>
+            <div className="how-step">
+              <div className="how-step-num">3</div>
+              <div className="how-step-title">Consult</div>
+              <div className="how-step-desc">Join an HD video call. Share reports and discuss your health.</div>
+            </div>
+            <div className="how-step">
+              <div className="how-step-num">4</div>
+              <div className="how-step-title">Prescription</div>
+              <div className="how-step-desc">Receive a digital prescription. Download, share, or print.</div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== TESTIMONIALS ===== */}
+        <section className="testimonials" id="testimonials">
+          <div className="features-header">
+            <div className="features-label">Patient Stories</div>
+            <h2 className="features-title">Loved by patients worldwide</h2>
+            <p className="features-sub">Real stories from real people who found care without borders.</p>
+          </div>
+          <div className="testimonials-grid">
+            <div className="testimonial-card">
+              <div className="testimonial-stars">★★★★★</div>
+              <div className="testimonial-text">"My mother in Toronto had a skin issue and waited 6 weeks for a dermatologist. On Medivera, she saw one the same day. The doctor spoke Tamil, which made her so comfortable."</div>
+              <div className="testimonial-author">
+                <div className="testimonial-avatar">P</div>
+                <div>
+                  <div className="testimonial-name">Priya Raghavan</div>
+                  <div className="testimonial-location">Toronto, Canada</div>
+                </div>
+              </div>
+            </div>
+            <div className="testimonial-card">
+              <div className="testimonial-stars">★★★★★</div>
+              <div className="testimonial-text">"Got a second opinion on my father's heart report from a cardiologist in Mumbai. The doctor was thorough, reviewed all reports on the video call, and gave us peace of mind."</div>
+              <div className="testimonial-author">
+                <div className="testimonial-avatar">R</div>
+                <div>
+                  <div className="testimonial-name">Rahul Menon</div>
+                  <div className="testimonial-location">London, UK</div>
+                </div>
+              </div>
+            </div>
+            <div className="testimonial-card">
+              <div className="testimonial-stars">★★★★★</div>
+              <div className="testimonial-text">"As an NRI in the US, finding a doctor who understands Indian dietary habits and lifestyle was impossible. Medivera solved that. The prescription was ready in 10 minutes."</div>
+              <div className="testimonial-author">
+                <div className="testimonial-avatar">A</div>
+                <div>
+                  <div className="testimonial-name">Ananya Sharma</div>
+                  <div className="testimonial-location">New Jersey, USA</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== CTA ===== */}
+        <section className="cta-section" id="cta-section">
+          <div className="cta-bg" />
+          <div className="cta-glow-1" />
+          <div className="cta-glow-2" />
+          <div className="cta-content">
+            <h2 className="cta-title">Your health shouldn't wait for borders</h2>
+            <p className="cta-sub">Join thousands of patients who've found trusted care from anywhere in the world. Your first consultation is just a click away.</p>
+            <button className="cta-btn" onClick={() => trackCta('Get Started — Its Free', '/signup')}>
+              Get Started — It's Free
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            </button>
+          </div>
+        </section>
+
+        {/* ===== FOOTER ===== */}
+        <footer className="landing-footer">
+          <div className="footer-grid">
+            <div>
+              <div className="nav-logo" style={{ marginBottom: '4px' }}>
+                <Image src="/logo.png" alt="Medivera" width={28} height={28} />
+                <span style={{ fontFamily: 'var(--font-outfit)', fontSize: '20px', fontWeight: 700, color: 'white' }}>Medivera</span>
+              </div>
+              <div className="footer-brand-desc">
+                Global digital healthcare for the Indian diaspora. Connecting patients with trusted specialists, anywhere in the world.
+              </div>
+            </div>
+            <div>
+              <div className="footer-col-title">Product</div>
+              <span className="footer-link" onClick={() => router.push('/search')}>Find Doctors</span>
+              <span className="footer-link" onClick={() => router.push('/signup')}>Sign Up</span>
+              <span className="footer-link" onClick={() => router.push('/login')}>Patient Login</span>
+              <span className="footer-link" onClick={() => router.push('/doctor/login')}>Doctor Login</span>
+            </div>
+            <div>
+              <div className="footer-col-title">Company</div>
+              <span className="footer-link">About Us</span>
+              <span className="footer-link">Careers</span>
+              <span className="footer-link">Blog</span>
+              <span className="footer-link">Contact</span>
+            </div>
+            <div>
+              <div className="footer-col-title">Legal</div>
+              <span className="footer-link" onClick={() => router.push('/legal/privacy')}>Privacy Policy</span>
+              <span className="footer-link" onClick={() => router.push('/legal/terms')}>Terms of Service</span>
+              <span className="footer-link">Disclaimer</span>
+              <span className="footer-link">HIPAA</span>
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <span>© {new Date().getFullYear()} Medivera Health Inc. All rights reserved.</span>
+            <span>Built with ❤️ for the global Indian community</span>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
 }

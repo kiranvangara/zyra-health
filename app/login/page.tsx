@@ -1,5 +1,6 @@
 'use client';
 
+import posthog from 'posthog-js';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
@@ -40,13 +41,18 @@ export default function Login() {
     const handleEmailLogin = async () => {
         setLoading(true);
         setError('');
+        const platform = Capacitor.isNativePlatform() ? 'native' : 'web';
+        posthog.capture('login_attempted', { method: 'email', platform });
+
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
+            posthog.capture('login_failed', { method: 'email', platform, error_message: error.message });
             setError(error.message);
             setLoading(false);
         } else {
             if (data.session) {
+                posthog.capture('login_success', { method: 'email', platform, user_id: data.session.user.id });
                 checkUserRoleAndRedirect(data.session.user.id);
             }
         }
@@ -54,6 +60,8 @@ export default function Login() {
 
     const handleSocialLogin = async (provider: 'google' | 'apple') => {
         setLoading(true);
+        const platform = Capacitor.isNativePlatform() ? 'native' : 'web';
+        posthog.capture('login_attempted', { method: provider, platform });
 
         try {
             if (provider === 'google' && Capacitor.isNativePlatform()) {
@@ -70,6 +78,7 @@ export default function Login() {
 
                     if (error) throw error;
                     if (data.session) {
+                        posthog.capture('login_success', { method: provider, platform, user_id: data.session.user.id });
                         checkUserRoleAndRedirect(data.session.user.id);
                     }
                 } else {
@@ -90,8 +99,10 @@ export default function Login() {
                     }
                 });
                 if (error) throw error;
+                // Note: OAuth redirects away, so login_success is captured on callback
             }
         } catch (error: any) {
+            posthog.capture('login_failed', { method: provider, platform, error_message: error.message });
             setError(error.message || 'An error occurred during sign in');
             setLoading(false);
         }

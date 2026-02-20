@@ -1,5 +1,6 @@
 'use client';
 
+import posthog from 'posthog-js';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../utils/supabase';
 import { User, Save, Globe, Stethoscope, Languages, Edit2, X, Check } from 'lucide-react';
@@ -75,6 +76,10 @@ export default function ProfileTab() {
             // Also update Auth Metadata for name consistency
             await supabase.auth.updateUser({
                 data: { full_name: displayName }
+            });
+            posthog.capture('doctor_profile_updated', {
+                doctor_id: user.id,
+                fields_changed: ['display_name', 'specialization', 'about_me', 'time_zone', 'consultation_fee', 'languages_spoken'],
             });
             setIsEditing(false); // Exit edit mode
             alert('Profile updated successfully! ✅');
