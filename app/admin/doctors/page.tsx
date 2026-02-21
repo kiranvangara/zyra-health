@@ -16,6 +16,7 @@ interface Doctor {
     experience_years: number;
     about_me?: string;
     education?: string;
+    qualification?: string;
     languages_spoken?: string[];
     registration_number?: string;
     profile_photo_url?: string;
@@ -41,7 +42,7 @@ export default function ManageDoctors() {
         consultation_fee_usd: undefined as number | undefined,
         experience_years: 5,
         education: '',
-
+        qualification: '',
         languages_input: '',
         registration_number: '',
         profile_photo_url: '',
@@ -105,6 +106,7 @@ export default function ManageDoctors() {
             experience_years: doctor.experience_years,
             about_me: doctor.about_me || '',
             education: doctor.education || '',
+            qualification: doctor.qualification || '',
             registration_number: doctor.registration_number || '',
             profile_photo_url: doctor.profile_photo_url || '',
             languages_input: (doctor.languages_spoken || []).join(', '),
@@ -145,6 +147,14 @@ export default function ManageDoctors() {
     const handleSubmit = async () => {
         if (!formData.display_name) {
             alert('Name is required');
+            return;
+        }
+        if (!formData.registration_number.trim()) {
+            alert('Registration Number is required for regulatory compliance');
+            return;
+        }
+        if (!formData.qualification.trim()) {
+            alert('Qualification is required for regulatory compliance');
             return;
         }
 
@@ -346,13 +356,26 @@ export default function ManageDoctors() {
                                         />
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>Registration No.</label>
+                                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>Registration No. *</label>
                                         <input
                                             className="input-box"
                                             value={formData.registration_number}
                                             onChange={(e) => setFormData({ ...formData, registration_number: e.target.value })}
+                                            placeholder="NMC/SMC Reg. No."
+                                            required
                                         />
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', marginBottom: '5px' }}>Qualification *</label>
+                                    <input
+                                        className="input-box"
+                                        placeholder="MBBS, MD (Medicine)..."
+                                        value={formData.qualification}
+                                        onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
+                                        required
+                                    />
                                 </div>
 
                                 <div>

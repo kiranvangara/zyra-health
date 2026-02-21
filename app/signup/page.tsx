@@ -12,6 +12,7 @@ export default function Signup() {
     const [fullName, setFullName] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [consentChecked, setConsentChecked] = useState(false);
 
     const handleSignup = async () => {
         setLoading(true);
@@ -33,6 +34,17 @@ export default function Signup() {
             setLoading(false);
         } else {
             posthog.capture('signup_complete', { method: 'email' });
+
+            // Log data processing consent to audit table
+            if (data.user) {
+                await supabase.from('consent_logs').insert({
+                    user_id: data.user.id,
+                    consent_type: 'data_processing',
+                    consent_given: true,
+                    user_agent: navigator.userAgent,
+                });
+            }
+
             // Check if email confirmation is required
             if (data.user && !data.session) {
                 alert('Please check your email to confirm your account!');
@@ -73,12 +85,21 @@ export default function Signup() {
                     onChange={(e) => setPassword(e.target.value)}
                 />
 
-                <button className="btn primary" style={{ marginTop: '20px' }} onClick={handleSignup} disabled={loading}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '12px', color: '#555', cursor: 'pointer', marginTop: '10px' }}>
+                    <input
+                        type="checkbox"
+                        checked={consentChecked}
+                        onChange={(e) => setConsentChecked(e.target.checked)}
+                        style={{ marginTop: '3px', accentColor: 'var(--primary)' }}
+                    />
+                    <span>
+                        I agree to the <span onClick={(e) => { e.preventDefault(); router.push('/legal/terms'); }} style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--primary)' }}>Terms & Conditions</span> and <span onClick={(e) => { e.preventDefault(); router.push('/legal/privacy'); }} style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--primary)' }}>Privacy Policy</span>, and consent to processing of my health data as described therein.
+                    </span>
+                </label>
+
+                <button className="btn primary" style={{ marginTop: '15px', opacity: consentChecked ? 1 : 0.5 }} onClick={handleSignup} disabled={loading || !consentChecked}>
                     {loading ? 'Creating Account...' : 'Create Account'}
                 </button>
-                <div style={{ fontSize: '11px', textAlign: 'center', color: '#777' }}>
-                    By signing up, you agree to our <span onClick={() => router.push('/legal/terms')} style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--primary)' }}>Terms</span> & <span onClick={() => router.push('/legal/privacy')} style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--primary)' }}>Privacy Policy</span>.
-                </div>
             </div>
         </div>
     );

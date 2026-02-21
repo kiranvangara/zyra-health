@@ -25,6 +25,7 @@ function BookingContent() {
     const [selectedDate, setSelectedDate] = useState(''); // YYYY-MM-DD
     const [selectedSlotISO, setSelectedSlotISO] = useState(''); // Full ISO string
     const [bookingLoading, setBookingLoading] = useState(false);
+    const [teleconsentChecked, setTeleconsentChecked] = useState(false);
 
     useEffect(() => {
         init();
@@ -134,6 +135,16 @@ function BookingContent() {
                 doctor_id: doctor.id,
                 amount: doctor.consultation_fee
             });
+
+            // Log teleconsultation consent to audit table
+            await supabase.from('consent_logs').insert({
+                user_id: user.id,
+                consent_type: 'teleconsultation',
+                consent_given: true,
+                user_agent: navigator.userAgent,
+                context: { doctor_id: doctor.id, appointment_id: appointment.id },
+            });
+            posthog.capture('consent_given', { type: 'teleconsultation' });
 
             // Create Daily.co room
             const roomResponse = await fetch('/api/create-room', {
@@ -324,7 +335,20 @@ function BookingContent() {
                     💡 Payment will be collected after the consultation
                 </div>
 
-                <button className="btn primary" onClick={handleBookAppointment} disabled={bookingLoading || !selectedSlotISO}>
+                {/* Teleconsultation Consent */}
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '12px', color: '#555', cursor: 'pointer', marginBottom: '15px', padding: '12px', background: '#f0f7ff', borderRadius: '8px', border: '1px solid #d0e3ff' }}>
+                    <input
+                        type="checkbox"
+                        checked={teleconsentChecked}
+                        onChange={(e) => setTeleconsentChecked(e.target.checked)}
+                        style={{ marginTop: '2px', accentColor: 'var(--primary)' }}
+                    />
+                    <span>
+                        I understand this is a <strong>teleconsultation</strong> and not a substitute for in-person medical care. In case of a medical emergency, I will visit the nearest hospital.
+                    </span>
+                </label>
+
+                <button className="btn primary" onClick={handleBookAppointment} disabled={bookingLoading || !selectedSlotISO || !teleconsentChecked} style={{ opacity: (selectedSlotISO && teleconsentChecked) ? 1 : 0.5 }}>
                     {bookingLoading ? 'Booking...' : 'Confirm Appointment'}
                 </button>
             </div>

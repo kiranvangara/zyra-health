@@ -152,6 +152,7 @@ export async function updateDoctorProfile(doctorId: string, updates: any) {
             experience_years: updates.experience_years,
             about_me: updates.about_me,
             education: updates.education,
+            qualification: updates.qualification,
             languages_spoken: updates.languages_spoken,
             registration_number: updates.registration_number,
             profile_photo_url: updates.profile_photo_url

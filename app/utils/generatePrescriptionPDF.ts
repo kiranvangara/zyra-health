@@ -13,8 +13,12 @@ interface PrescriptionData {
     appointment: {
         doctor_name: string;
         scheduled_at: string;
+        doctor_qualification?: string;
+        doctor_registration_number?: string;
     };
-    patient_name?: string; // Optional if we want to pass it
+    patient_name?: string;
+    patient_age?: string;
+    patient_gender?: string;
 }
 
 export const generatePrescriptionPDF = (prescription: PrescriptionData) => {
@@ -32,7 +36,15 @@ export const generatePrescriptionPDF = (prescription: PrescriptionData) => {
 
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text('Global Healthcare for NRIs', 20, 32);
+    doc.text('Digital Healthcare', 20, 32);
+
+    // Teleconsultation Label
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 71, 171);
+    doc.text('TELECONSULTATION', pageWidth - 60, 50);
+    doc.setDrawColor(0, 71, 171);
+    doc.roundedRect(pageWidth - 66, 44, 52, 10, 2, 2, 'S');
 
     // Doctor Details
     doc.setTextColor(0, 0, 0);
@@ -40,22 +52,51 @@ export const generatePrescriptionPDF = (prescription: PrescriptionData) => {
     doc.setFont('helvetica', 'bold');
     doc.text(`Dr. ${prescription.appointment.doctor_name}`, 20, 55);
 
+    let doctorY = 60;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Date: ${new Date(prescription.created_at).toLocaleDateString()}`, pageWidth - 60, 55);
-    doc.text(`Prescription ID: ${prescription.id.slice(0, 8)}`, pageWidth - 60, 60);
+    if (prescription.appointment.doctor_qualification) {
+        doc.text(prescription.appointment.doctor_qualification, 20, doctorY);
+        doctorY += 5;
+    }
+    if (prescription.appointment.doctor_registration_number) {
+        doc.text(`Reg. No: ${prescription.appointment.doctor_registration_number}`, 20, doctorY);
+        doctorY += 5;
+    }
+
+    // Date & ID on right side
+    doc.text(`Date: ${new Date(prescription.created_at).toLocaleDateString()}`, pageWidth - 60, 60);
+    doc.text(`Prescription ID: ${prescription.id.slice(0, 8)}`, pageWidth - 60, 65);
+
+    // Patient Details
+    doctorY = Math.max(doctorY, 70) + 3;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, doctorY, pageWidth - 20, doctorY);
+    doctorY += 8;
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Patient:', 20, doctorY);
+    doc.setFont('helvetica', 'normal');
+    const patientName = prescription.patient_name || 'N/A';
+    const patientDetails = [patientName];
+    if (prescription.patient_age) patientDetails.push(`Age: ${prescription.patient_age}`);
+    if (prescription.patient_gender) patientDetails.push(prescription.patient_gender);
+    doc.text(patientDetails.join('  |  '), 48, doctorY);
 
     // Divider
+    doctorY += 5;
     doc.setDrawColor(200, 200, 200);
-    doc.line(20, 65, pageWidth - 20, 65);
+    doc.line(20, doctorY, pageWidth - 20, doctorY);
 
     // Medications Header
+    let yPos = doctorY + 12;
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('Medications', 20, 80);
+    doc.text('Medications', 20, yPos);
 
-    // Medications List
-    let yPos = 95;
+    // Medications Table Header
+    yPos += 15;
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.text('Medicine Name', 20, yPos);
@@ -94,7 +135,7 @@ export const generatePrescriptionPDF = (prescription: PrescriptionData) => {
     const footerY = doc.internal.pageSize.getHeight() - 30;
     doc.setFontSize(10);
     doc.setTextColor(150, 150, 150);
-    doc.text('This is a digitally generated prescription.', 20, footerY);
+    doc.text('This is a digitally generated teleconsultation prescription.', 20, footerY);
     doc.text('Medivera • www.medivera.com', 20, footerY + 5);
 
     // Save
