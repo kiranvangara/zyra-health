@@ -23,6 +23,8 @@ interface Doctor {
     is_verified?: boolean;
     availability?: string;
     languages_spoken?: string[];
+    qualification?: string;
+    registration_number?: string;
 }
 
 function SearchContent() {
@@ -368,6 +370,12 @@ function SearchContent() {
                                         <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--primary)' }}>
                                             {doc.specialization}
                                         </div>
+
+                                        {(doc.qualification || doc.registration_number) && (
+                                            <div style={{ fontSize: '11px', color: '#94A3B8', lineHeight: '1.3' }}>
+                                                {doc.qualification}{doc.qualification && doc.registration_number && ' • '}{doc.registration_number && `Reg: ${doc.registration_number}`}
+                                            </div>
+                                        )}
 
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                                             <div style={{ fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>

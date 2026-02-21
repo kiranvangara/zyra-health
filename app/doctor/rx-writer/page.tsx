@@ -132,6 +132,15 @@ function RxWriterContent() {
 
             {/* Footer Actions */}
             <div style={{ padding: '20px', background: 'white', borderTop: '1px solid #ddd' }}>
+                {/* Drug Prescribing Disclaimer */}
+                <div style={{
+                    padding: '10px 12px', marginBottom: '12px',
+                    background: '#FFFBEB', borderRadius: '8px',
+                    border: '1px solid #FDE68A',
+                    fontSize: '11px', lineHeight: '1.5', color: '#92400E'
+                }}>
+                    <strong>⚠️ Prescribing reminder:</strong> Per Telemedicine Practice Guidelines 2020 — List O drugs only for first consultations. List A drugs require video consultation. Schedule X and narcotics/psychotropics cannot be prescribed via teleconsultation.
+                </div>
                 <button
                     className="btn primary"
                     style={{ background: '#28a745' }}
