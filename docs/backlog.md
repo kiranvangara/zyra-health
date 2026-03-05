@@ -71,14 +71,14 @@
 ### Legal & Business Setup 🇮🇳
 - [/] Register company entity (Pvt Ltd / LLP) — *in progress*
 - [ ] Obtain GST registration
-- [ ] Add jurisdiction clause to Terms (India-only for now)
+- [x] Add jurisdiction clause to Terms (Amaravathi, Andhra Pradesh)
 - [ ] Obtain medical malpractice / professional indemnity insurance
 
 ### Patient Consent Flows
 - [x] Add teleconsultation consent checkbox at booking confirmation
 - [x] Add data processing consent at signup (DPDP Act requirement)
 - [x] Build consent audit log — store timestamped records in DB
-- [ ] Add "right to withdraw consent" mechanism for patients
+- [x] Add "right to withdraw consent" mechanism for patients
 
 ### E-Prescription Compliance
 - [x] Add `qualification` field to `doctors` table and admin panel
@@ -137,10 +137,13 @@
 - [ ] Add WhatsApp contact link/button to landing page and footer
 - [ ] Use `https://wa.me/<number>` deep link for one-tap chat
 
-### Customer Support Chat Bot (tawk.to)
-- [ ] Create tawk.to account and configure widget
-- [ ] Embed tawk.to script on landing page / web pages
-- [ ] Hide widget on native app (Capacitor) if not needed
+### Customer Support Chat *(decision pending)*
+> **Options under consideration:**
+> - **Option A:** Freshchat Growth ($19/mo) — AI bot (Freddy) + WhatsApp handoff
+> - **Option B:** Simple WhatsApp click-to-chat button (free, no AI) + FAQ page
+> - See detailed analysis: `chatbot_analysis.md` in brain artifacts
+- [ ] Finalize chatbot approach (Freshchat vs WhatsApp button)
+- [ ] Implement chosen solution
 
 ### Multi-Dimensional Doctor Reviews
 - [ ] Replace single overall rating with aspect-based ratings (Friendliness, Expertise, Communication, Punctuality)
@@ -173,8 +176,8 @@
 - [ ] Fix Google Sign-In redirect (native auth plugin configured, needs testing)
 
 ### Minor Patient Safeguards
-- [ ] Age verification at booking — if patient < 16, require guardian details
-- [ ] Guardian consent flow for minor teleconsultations
+- [x] Age verification at booking — patients must be 18+ for MVP
+- [ ] Guardian consent flow for minor teleconsultations *(future)*
 
 ### Drug Category Enforcement *(long-term)*
 - [x] Build drug database with 254K medicines (Kaggle dataset, Supabase)

@@ -12,8 +12,11 @@ export default function Profile() {
     const [loading, setLoading] = useState(true);
     const [imageError, setImageError] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showConsentModal, setShowConsentModal] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [consentWithdrawn, setConsentWithdrawn] = useState(false);
+    const [consentLoading, setConsentLoading] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -36,6 +39,7 @@ export default function Profile() {
                 avatar_url: user.user_metadata?.avatar_url,
                 userId: user.id.slice(0, 8).toUpperCase()
             });
+            setConsentWithdrawn(patient?.consent_withdrawn || false);
             setLoading(false);
         };
         fetchProfile();
@@ -96,8 +100,6 @@ export default function Profile() {
     const handleDeleteAccount = async () => {
         setDeleting(true);
         try {
-            // Note: Full account deletion requires a backend/edge function to delete auth user.
-            // For now, we anonymize the patient record and sign out.
             const userId = profile.id;
 
             await supabase
@@ -119,6 +121,43 @@ export default function Profile() {
         } finally {
             setDeleting(false);
             setShowDeleteModal(false);
+        }
+    };
+
+    const handleConsentToggle = async () => {
+        setConsentLoading(true);
+        try {
+            const newState = !consentWithdrawn;
+
+            await supabase
+                .from('patients')
+                .update({ consent_withdrawn: newState })
+                .eq('id', profile.id);
+
+            // Log consent action to audit table
+            await supabase.from('consent_logs').insert({
+                user_id: profile.id,
+                consent_type: 'data_processing',
+                consent_given: !newState,
+                user_agent: navigator.userAgent,
+                context: {
+                    action: newState ? 'consent_withdrawn' : 'consent_restored',
+                    timestamp: new Date().toISOString(),
+                },
+            });
+
+            setConsentWithdrawn(newState);
+            setShowConsentModal(false);
+
+            if (newState) {
+                alert('Your consent has been withdrawn. You will not be able to book new appointments until you re-consent.');
+            } else {
+                alert('Your consent has been restored. You can now book appointments.');
+            }
+        } catch (error: any) {
+            alert('Error updating consent: ' + error.message);
+        } finally {
+            setConsentLoading(false);
         }
     };
 
@@ -161,6 +200,20 @@ export default function Profile() {
                     {downloading && <span style={{ fontSize: '12px', color: '#666' }}>Exporting...</span>}
                 </div>
 
+                {/* Withdraw / Restore Consent */}
+                <div
+                    className="card"
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: consentWithdrawn ? '3px solid #e65100' : '3px solid #2e7d32' }}
+                    onClick={() => setShowConsentModal(true)}
+                >
+                    <div>
+                        <div style={{ fontWeight: '500' }}>{consentWithdrawn ? 'Restore Consent' : 'Withdraw Consent'}</div>
+                        <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
+                            {consentWithdrawn ? '⚠️ Consent withdrawn — booking disabled' : '✅ Data processing consent active'}
+                        </div>
+                    </div>
+                </div>
+
                 <div
                     className="card"
                     style={{ cursor: 'pointer', color: '#dc2626' }}
@@ -198,6 +251,54 @@ export default function Profile() {
                                 disabled={deleting}
                             >
                                 {deleting ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Consent Withdrawal/Restore Modal */}
+            {showConsentModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div className="card" style={{ width: '90%', maxWidth: '400px', padding: '25px', textAlign: 'center' }}>
+                        {consentWithdrawn ? (
+                            <>
+                                <h3 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>Restore Consent?</h3>
+                                <p style={{ fontSize: '14px', color: '#555', marginBottom: '15px', lineHeight: '1.5' }}>
+                                    Restoring consent will allow you to book new appointments and use all platform features again.
+                                </p>
+                            </>
+                        ) : (
+                            <>
+                                <h3 style={{ margin: '0 0 10px 0', color: '#e65100' }}>Withdraw Consent?</h3>
+                                <p style={{ fontSize: '14px', color: '#555', marginBottom: '15px', lineHeight: '1.5' }}>
+                                    Under the DPDP Act 2023, you have the right to withdraw your data processing consent. Please note:
+                                </p>
+                                <ul style={{ textAlign: 'left', fontSize: '13px', color: '#555', lineHeight: '1.6', paddingLeft: '20px', marginBottom: '15px' }}>
+                                    <li>You will <strong>not be able to book</strong> new appointments</li>
+                                    <li>Existing medical records will be <strong>retained for 3 years</strong> as required by law</li>
+                                    <li>You can <strong>restore consent</strong> at any time from this page</li>
+                                </ul>
+                            </>
+                        )}
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                                className="btn"
+                                style={{ flex: 1, background: '#f1f5f9', color: '#333' }}
+                                onClick={() => setShowConsentModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn"
+                                style={{ flex: 1, background: consentWithdrawn ? '#2e7d32' : '#e65100', color: 'white' }}
+                                onClick={handleConsentToggle}
+                                disabled={consentLoading}
+                            >
+                                {consentLoading ? 'Processing...' : (consentWithdrawn ? 'Restore Consent' : 'Withdraw Consent')}
                             </button>
                         </div>
                     </div>

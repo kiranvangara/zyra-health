@@ -26,6 +26,9 @@ function BookingContent() {
     const [selectedSlotISO, setSelectedSlotISO] = useState(''); // Full ISO string
     const [bookingLoading, setBookingLoading] = useState(false);
     const [teleconsentChecked, setTeleconsentChecked] = useState(false);
+    const [ageRestricted, setAgeRestricted] = useState(false);
+    const [ageNotSet, setAgeNotSet] = useState(false);
+    const [consentWithdrawn, setConsentWithdrawn] = useState(false);
 
     useEffect(() => {
         init();
@@ -61,6 +64,26 @@ function BookingContent() {
                 doctor_name: data.display_name,
                 specialization: data.specialization
             });
+
+            // Fetch patient record for age & consent checks
+            const { data: patient } = await supabase
+                .from('patients')
+                .select('age, consent_withdrawn')
+                .eq('id', user.id)
+                .single();
+
+            if (patient) {
+                if (patient.consent_withdrawn) {
+                    setConsentWithdrawn(true);
+                    return;
+                }
+                if (patient.age === null || patient.age === undefined) {
+                    setAgeNotSet(true);
+                } else if (parseInt(patient.age) < 18) {
+                    setAgeRestricted(true);
+                    return;
+                }
+            }
 
             // Fetch Slots
             fetchSlots(data.id);
@@ -203,154 +226,191 @@ function BookingContent() {
 
             <div style={{ padding: '20px' }}>
 
-                {/* Doctor Info */}
-                <div className="card" style={{ marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                        <div style={{
-                            width: '60px', height: '60px',
-                            background: '#eef', borderRadius: '50px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'var(--primary)', overflow: 'hidden', flexShrink: 0, fontSize: '30px'
-                        }}>
-                            {doctor.profile_photo_url ? (
-                                <img src={doctor.profile_photo_url} alt={doctor.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                                '👨‍⚕️'
-                            )}
-                        </div>
-                        <div>
-                            <div style={{ fontWeight: 'bold' }}>{doctor.display_name || 'Dr. Anonymous'}</div>
-                            <div style={{ fontSize: '12px', color: '#666' }}>{doctor.specialization}</div>
-                        </div>
-                        <div style={{ marginLeft: 'auto', fontSize: '18px', fontWeight: 'bold', color: 'var(--primary)' }}>
-                            {getDisplayPrice()}
-                        </div>
+                {/* Age Restriction Block */}
+                {ageRestricted && (
+                    <div style={{ padding: '20px', background: '#ffebee', borderRadius: '12px', border: '1px solid #ef9a9a', textAlign: 'center', marginBottom: '20px' }}>
+                        <div style={{ fontSize: '40px', marginBottom: '10px' }}>🔒</div>
+                        <h3 style={{ margin: '0 0 8px 0', color: '#c62828' }}>Age Restriction</h3>
+                        <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.5', margin: 0 }}>
+                            You must be <strong>18 years or older</strong> to book a teleconsultation as per Telemedicine Practice Guidelines 2020.
+                        </p>
                     </div>
-                </div>
-
-                {/* Slots Loading State */}
-                {slotsLoading && <div className="card" style={{ padding: '20px', textAlign: 'center', color: '#666' }}>checking availability...</div>}
-
-                {slotsError && <div style={{ color: 'red', marginBottom: '10px' }}>Error: {slotsError}</div>}
-
-                {/* Slots UI */}
-                {!slotsLoading && !slotsError && (
-                    <>
-                        {/* Date Selection */}
-                        <div style={{ marginBottom: '15px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', display: 'block' }}>Select Date</label>
-                            {availableDates.length === 0 ? (
-                                <div style={{ padding: '15px', background: '#ffebee', borderRadius: '8px', color: '#c62828', fontSize: '13px' }}>
-                                    No slots available in the next 7 days.
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' }}>
-                                    {availableDates.map(dateStr => {
-                                        const dateObj = parseISO(dateStr);
-                                        const dayName = format(dateObj, 'EEE');
-                                        const dayNum = format(dateObj, 'd');
-                                        const month = format(dateObj, 'MMM');
-                                        const isSelected = selectedDate === dateStr;
-
-                                        return (
-                                            <div
-                                                key={dateStr}
-                                                onClick={() => {
-                                                    setSelectedDate(dateStr);
-                                                    posthog.capture('booking_date_selected', {
-                                                        doctor_id: doctor.id,
-                                                        date: dateStr,
-                                                        available_slots_count: slotsByDate[dateStr]?.length || 0,
-                                                    });
-                                                }}
-                                                style={{
-                                                    minWidth: '70px',
-                                                    padding: '10px',
-                                                    textAlign: 'center',
-                                                    background: isSelected ? 'var(--primary)' : 'white',
-                                                    color: isSelected ? 'white' : '#333',
-                                                    border: isSelected ? 'none' : '1px solid #ddd',
-                                                    borderRadius: '12px',
-                                                    cursor: 'pointer',
-                                                    transition: 'all 0.2s'
-                                                }}
-                                            >
-                                                <div style={{ fontSize: '11px', opacity: 0.8 }}>{dayName}</div>
-                                                <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{dayNum}</div>
-                                                <div style={{ fontSize: '10px', opacity: 0.8 }}>{month}</div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Time Selection */}
-                        {selectedDate && slotsByDate[selectedDate] && (
-                            <div className="card">
-                                <label style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', display: 'block' }}>Select Time</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                                    {slotsByDate[selectedDate].map((isoString: string) => {
-                                        const timeLabel = format(parseISO(isoString), 'h:mm a');
-                                        const isSelected = selectedSlotISO === isoString;
-
-                                        return (
-                                            <div
-                                                key={isoString}
-                                                onClick={() => {
-                                                    setSelectedSlotISO(isoString);
-                                                    const daysUntil = Math.round(
-                                                        (new Date(isoString).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-                                                    );
-                                                    posthog.capture('booking_slot_selected', {
-                                                        doctor_id: doctor.id,
-                                                        slot_time: timeLabel,
-                                                        days_until_appointment: daysUntil,
-                                                    });
-                                                }}
-                                                style={{
-                                                    padding: '12px',
-                                                    textAlign: 'center',
-                                                    border: isSelected ? '2px solid var(--primary)' : '1px solid #eee',
-                                                    background: isSelected ? '#eef2ff' : 'white',
-                                                    color: isSelected ? 'var(--primary)' : '#333',
-                                                    borderRadius: '8px',
-                                                    cursor: 'pointer',
-                                                    fontSize: '13px',
-                                                    fontWeight: isSelected ? 'bold' : '500'
-                                                }}
-                                            >
-                                                {timeLabel}
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </>
                 )}
 
-                {/* Note about payment */}
-                <div style={{ padding: '15px', background: '#fff3cd', borderRadius: '8px', marginBottom: '20px', marginTop: '20px', fontSize: '13px', color: '#856404' }}>
-                    💡 Payment will be collected after the consultation
-                </div>
+                {/* Consent Withdrawn Block */}
+                {consentWithdrawn && (
+                    <div style={{ padding: '20px', background: '#fff3e0', borderRadius: '12px', border: '1px solid #ffcc80', textAlign: 'center', marginBottom: '20px' }}>
+                        <div style={{ fontSize: '40px', marginBottom: '10px' }}>⚠️</div>
+                        <h3 style={{ margin: '0 0 8px 0', color: '#e65100' }}>Consent Required</h3>
+                        <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.5', margin: '0 0 15px 0' }}>
+                            You previously withdrew your data processing consent. To book appointments, please re-consent in your profile settings.
+                        </p>
+                        <button className="btn primary" onClick={() => router.push('/profile')} style={{ fontSize: '13px' }}>
+                            Go to Profile Settings
+                        </button>
+                    </div>
+                )}
 
-                {/* Teleconsultation Consent */}
-                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '12px', color: '#555', cursor: 'pointer', marginBottom: '15px', padding: '12px', background: '#f0f7ff', borderRadius: '8px', border: '1px solid #d0e3ff' }}>
-                    <input
-                        type="checkbox"
-                        checked={teleconsentChecked}
-                        onChange={(e) => setTeleconsentChecked(e.target.checked)}
-                        style={{ marginTop: '2px', accentColor: 'var(--primary)' }}
-                    />
-                    <span>
-                        I understand this is a <strong>teleconsultation</strong> and not a substitute for in-person medical care. In case of a medical emergency, I will visit the nearest hospital.
-                    </span>
-                </label>
+                {/* Age Not Set Warning */}
+                {ageNotSet && !ageRestricted && !consentWithdrawn && (
+                    <div style={{ padding: '12px', background: '#fff3cd', borderRadius: '8px', marginBottom: '15px', fontSize: '13px', color: '#856404', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        ⚠️ Please update your age in <span onClick={() => router.push('/profile/edit')} style={{ textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}>Profile Settings</span> before your appointment.
+                    </div>
+                )}
 
-                <button className="btn primary" onClick={handleBookAppointment} disabled={bookingLoading || !selectedSlotISO || !teleconsentChecked} style={{ opacity: (selectedSlotISO && teleconsentChecked) ? 1 : 0.5 }}>
-                    {bookingLoading ? 'Booking...' : 'Confirm Appointment'}
-                </button>
+                {!ageRestricted && !consentWithdrawn && (
+                    <>
+
+                        {/* Doctor Info */}
+                        <div className="card" style={{ marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                <div style={{
+                                    width: '60px', height: '60px',
+                                    background: '#eef', borderRadius: '50px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: 'var(--primary)', overflow: 'hidden', flexShrink: 0, fontSize: '30px'
+                                }}>
+                                    {doctor.profile_photo_url ? (
+                                        <img src={doctor.profile_photo_url} alt={doctor.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        '👨‍⚕️'
+                                    )}
+                                </div>
+                                <div>
+                                    <div style={{ fontWeight: 'bold' }}>{doctor.display_name || 'Dr. Anonymous'}</div>
+                                    <div style={{ fontSize: '12px', color: '#666' }}>{doctor.specialization}</div>
+                                </div>
+                                <div style={{ marginLeft: 'auto', fontSize: '18px', fontWeight: 'bold', color: 'var(--primary)' }}>
+                                    {getDisplayPrice()}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Slots Loading State */}
+                        {slotsLoading && <div className="card" style={{ padding: '20px', textAlign: 'center', color: '#666' }}>checking availability...</div>}
+
+                        {slotsError && <div style={{ color: 'red', marginBottom: '10px' }}>Error: {slotsError}</div>}
+
+                        {/* Slots UI */}
+                        {!slotsLoading && !slotsError && (
+                            <>
+                                {/* Date Selection */}
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', display: 'block' }}>Select Date</label>
+                                    {availableDates.length === 0 ? (
+                                        <div style={{ padding: '15px', background: '#ffebee', borderRadius: '8px', color: '#c62828', fontSize: '13px' }}>
+                                            No slots available in the next 7 days.
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' }}>
+                                            {availableDates.map(dateStr => {
+                                                const dateObj = parseISO(dateStr);
+                                                const dayName = format(dateObj, 'EEE');
+                                                const dayNum = format(dateObj, 'd');
+                                                const month = format(dateObj, 'MMM');
+                                                const isSelected = selectedDate === dateStr;
+
+                                                return (
+                                                    <div
+                                                        key={dateStr}
+                                                        onClick={() => {
+                                                            setSelectedDate(dateStr);
+                                                            posthog.capture('booking_date_selected', {
+                                                                doctor_id: doctor.id,
+                                                                date: dateStr,
+                                                                available_slots_count: slotsByDate[dateStr]?.length || 0,
+                                                            });
+                                                        }}
+                                                        style={{
+                                                            minWidth: '70px',
+                                                            padding: '10px',
+                                                            textAlign: 'center',
+                                                            background: isSelected ? 'var(--primary)' : 'white',
+                                                            color: isSelected ? 'white' : '#333',
+                                                            border: isSelected ? 'none' : '1px solid #ddd',
+                                                            borderRadius: '12px',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                    >
+                                                        <div style={{ fontSize: '11px', opacity: 0.8 }}>{dayName}</div>
+                                                        <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{dayNum}</div>
+                                                        <div style={{ fontSize: '10px', opacity: 0.8 }}>{month}</div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Time Selection */}
+                                {selectedDate && slotsByDate[selectedDate] && (
+                                    <div className="card">
+                                        <label style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', display: 'block' }}>Select Time</label>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                                            {slotsByDate[selectedDate].map((isoString: string) => {
+                                                const timeLabel = format(parseISO(isoString), 'h:mm a');
+                                                const isSelected = selectedSlotISO === isoString;
+
+                                                return (
+                                                    <div
+                                                        key={isoString}
+                                                        onClick={() => {
+                                                            setSelectedSlotISO(isoString);
+                                                            const daysUntil = Math.round(
+                                                                (new Date(isoString).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                                                            );
+                                                            posthog.capture('booking_slot_selected', {
+                                                                doctor_id: doctor.id,
+                                                                slot_time: timeLabel,
+                                                                days_until_appointment: daysUntil,
+                                                            });
+                                                        }}
+                                                        style={{
+                                                            padding: '12px',
+                                                            textAlign: 'center',
+                                                            border: isSelected ? '2px solid var(--primary)' : '1px solid #eee',
+                                                            background: isSelected ? '#eef2ff' : 'white',
+                                                            color: isSelected ? 'var(--primary)' : '#333',
+                                                            borderRadius: '8px',
+                                                            cursor: 'pointer',
+                                                            fontSize: '13px',
+                                                            fontWeight: isSelected ? 'bold' : '500'
+                                                        }}
+                                                    >
+                                                        {timeLabel}
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {/* Note about payment */}
+                        <div style={{ padding: '15px', background: '#fff3cd', borderRadius: '8px', marginBottom: '20px', marginTop: '20px', fontSize: '13px', color: '#856404' }}>
+                            💡 Payment will be collected after the consultation
+                        </div>
+
+                        {/* Teleconsultation Consent */}
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '12px', color: '#555', cursor: 'pointer', marginBottom: '15px', padding: '12px', background: '#f0f7ff', borderRadius: '8px', border: '1px solid #d0e3ff' }}>
+                            <input
+                                type="checkbox"
+                                checked={teleconsentChecked}
+                                onChange={(e) => setTeleconsentChecked(e.target.checked)}
+                                style={{ marginTop: '2px', accentColor: 'var(--primary)' }}
+                            />
+                            <span>
+                                I understand this is a <strong>teleconsultation</strong> and not a substitute for in-person medical care. In case of a medical emergency, I will visit the nearest hospital.
+                            </span>
+                        </label>
+
+                        <button className="btn primary" onClick={handleBookAppointment} disabled={bookingLoading || !selectedSlotISO || !teleconsentChecked} style={{ opacity: (selectedSlotISO && teleconsentChecked) ? 1 : 0.5 }}>
+                            {bookingLoading ? 'Booking...' : 'Confirm Appointment'}
+                        </button>
+                    </>
+                )}
             </div>
         </div>
     );

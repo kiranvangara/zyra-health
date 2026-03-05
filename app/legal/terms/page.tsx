@@ -19,7 +19,7 @@ export default function TermsAndConditions() {
             <div className="page-container">
                 <div className="card">
                     <h1 style={{ fontSize: '24px', marginBottom: '20px' }}>Terms & Conditions</h1>
-                    <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>Last updated: February 2026</p>
+                    <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>Last updated: March 2026</p>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', lineHeight: '1.6', fontSize: '14px', color: '#333' }}>
                         <section>
@@ -89,8 +89,18 @@ export default function TermsAndConditions() {
                         </section>
 
                         <section>
-                            <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>10. Governing Law & Changes</h3>
-                            <p>These Terms shall be governed by and construed in accordance with the laws of India. Any disputes arising from these Terms shall be subject to the exclusive jurisdiction of the courts in India.</p>
+                            <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px' }}>10. Governing Law, Jurisdiction & Dispute Resolution</h3>
+                            <div style={{ background: '#e8f4fd', padding: '12px', borderRadius: '8px', borderLeft: '4px solid #0047AB', marginBottom: '10px' }}>
+                                <strong>Jurisdiction:</strong> This Service operates exclusively within the territory of India. By using this Service, you agree that Indian law governs all aspects of your use.
+                            </div>
+                            <p>These Terms shall be governed by and construed in accordance with the laws of India, without regard to conflict of law principles.</p>
+                            <ul style={{ paddingLeft: '20px', listStyleType: 'disc', marginTop: '10px' }}>
+                                <li>Any disputes arising out of or in connection with these Terms shall first be attempted to be resolved through <strong>mediation</strong> between the parties within 30 days of written notice.</li>
+                                <li>If mediation fails, the dispute shall be referred to and finally resolved by <strong>arbitration</strong> under the Arbitration and Conciliation Act, 1996. The seat of arbitration shall be <strong>Amaravathi, Andhra Pradesh, India</strong>.</li>
+                                <li>The arbitration shall be conducted by a sole arbitrator mutually agreed upon by both parties, in the English language.</li>
+                                <li>Subject to the above arbitration clause, the courts at <strong>Amaravathi, Andhra Pradesh</strong> shall have exclusive jurisdiction over any proceedings arising out of or related to these Terms.</li>
+                                <li>This Service is intended for use within India only. Users accessing the Service from outside India do so at their own risk and are responsible for compliance with local laws.</li>
+                            </ul>
                             <p style={{ marginTop: '10px' }}>We reserve the right to modify these Terms at any time. Material changes will be communicated via the Service or email. Continued use of the Service after changes constitutes acceptance of the updated Terms.</p>
                         </section>
                     </div>
