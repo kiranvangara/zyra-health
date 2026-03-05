@@ -4,12 +4,17 @@ import posthog from 'posthog-js';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '../../utils/supabase';
+import MedicineSearch from '../../components/MedicineSearch';
+
 
 interface Medication {
     name: string;
+    composition?: string;
+    strength?: string;
     frequency: string;
     duration: string;
 }
+
 
 import SignatureCanvas from 'react-signature-canvas';
 import { useRef } from 'react';
@@ -92,9 +97,80 @@ function RxWriterContent() {
             {/* ... (Header) ... */}
 
             <div style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
-                {/* ... (Medications List) ... */}
+                {/* Medications List */}
+                {medications.map((med, index) => (
+                    <div key={index} style={{ marginBottom: '16px', padding: '12px', background: 'white', borderRadius: '10px', border: '1px solid #e8e8e8' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#666' }}>Medicine {index + 1}</span>
+                            {medications.length > 1 && (
+                                <span
+                                    onClick={() => setMedications(medications.filter((_, i) => i !== index))}
+                                    style={{ fontSize: '12px', color: '#ff4444', cursor: 'pointer' }}
+                                >Remove ✕</span>
+                            )}
+                        </div>
+                        <MedicineSearch
+                            value={med.name}
+                            onChange={(val) => {
+                                const updated = [...medications];
+                                updated[index] = { ...updated[index], name: val };
+                                setMedications(updated);
+                            }}
+                            onSelect={(selected) => {
+                                const updated = [...medications];
+                                updated[index] = {
+                                    ...updated[index],
+                                    name: selected.name,
+                                    composition: selected.composition || undefined,
+                                };
+                                setMedications(updated);
+                            }}
+                            placeholder="Search medicine (e.g. Amoxicillin)"
+                        />
+                        {med.composition && (
+                            <div style={{ fontSize: '11px', color: '#0070f3', marginTop: '4px', padding: '0 4px' }}>
+                                💊 {med.composition}
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                            <input
+                                className="input-box"
+                                style={{ flex: 1 }}
+                                placeholder="Frequency (e.g. Twice daily)"
+                                value={med.frequency}
+                                onChange={(e) => {
+                                    const updated = [...medications];
+                                    updated[index].frequency = e.target.value;
+                                    setMedications(updated);
+                                }}
+                            />
+                            <input
+                                className="input-box"
+                                style={{ flex: 1 }}
+                                placeholder="Duration (e.g. 5 days)"
+                                value={med.duration}
+                                onChange={(e) => {
+                                    const updated = [...medications];
+                                    updated[index].duration = e.target.value;
+                                    setMedications(updated);
+                                }}
+                            />
+                        </div>
+                    </div>
+                ))}
 
-                {/* ... (Add More Button) ... */}
+                {/* Add More Button */}
+                <button
+                    onClick={() => setMedications([...medications, { name: '', frequency: '', duration: '' }])}
+                    style={{
+                        width: '100%', padding: '10px', marginBottom: '20px',
+                        background: 'transparent', border: '1px dashed #ccc',
+                        borderRadius: '8px', color: '#666', cursor: 'pointer',
+                        fontSize: '13px',
+                    }}
+                >
+                    + Add Another Medicine
+                </button>
 
                 {/* Notes */}
                 <div style={{ marginBottom: '20px' }}>

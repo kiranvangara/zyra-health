@@ -6,6 +6,7 @@ interface PrescriptionData {
     created_at: string;
     medications: Array<{
         name: string;
+        composition?: string;
         frequency: string;
         duration: string;
     }>;
@@ -112,6 +113,14 @@ export const generatePrescriptionPDF = (prescription: PrescriptionData) => {
         doc.text(med.name, 20, yPos);
         doc.text(med.frequency, 100, yPos);
         doc.text(med.duration, 160, yPos);
+        if (med.composition) {
+            yPos += 5;
+            doc.setFontSize(9);
+            doc.setTextColor(120, 120, 120);
+            doc.text(med.composition, 20, yPos);
+            doc.setFontSize(11);
+            doc.setTextColor(0, 0, 0);
+        }
         yPos += 10;
     });
 
