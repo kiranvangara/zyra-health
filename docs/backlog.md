@@ -69,7 +69,7 @@
 > **Strategy:** India-first launch. Gain traction domestically before expanding abroad.
 
 ### Legal & Business Setup 🇮🇳
-- [ ] Register company entity (Pvt Ltd / LLP)
+- [/] Register company entity (Pvt Ltd / LLP) — *in progress*
 - [ ] Obtain GST registration
 - [ ] Add jurisdiction clause to Terms (India-only for now)
 - [ ] Obtain medical malpractice / professional indemnity insurance
@@ -107,7 +107,7 @@
 
 ## 🔴 P0 — Must Have (Revenue & Core Experience)
 
-### Payment Integration
+### Payment Integration *(blocked — depends on company registration)*
 - [ ] Secure Stripe/Razorpay integration (collect before booking)
 - [ ] Refund logic (automated refunds for cancellations >24h)
 - [ ] Receipts & invoice generation
@@ -132,7 +132,7 @@
 - [ ] Appointment Reminders — push/email notifications before calls
 - [ ] Chat System — simple text chat between patient and doctor (post-consultation)
 
-### WhatsApp Business Integration
+### WhatsApp Business Integration *(blocked — depends on company registration)*
 - [ ] Set up WhatsApp Business account
 - [ ] Add WhatsApp contact link/button to landing page and footer
 - [ ] Use `https://wa.me/<number>` deep link for one-tap chat
@@ -178,7 +178,7 @@
 
 ### Drug Category Enforcement *(long-term)*
 - [x] Build drug database with 254K medicines (Kaggle dataset, Supabase)
-- [ ] Tag medicines with List O / A / B category
+- [x] Tag medicines with List O / A / B category
 - [ ] Validate prescriptions against consultation type (first vs follow-up)
 - [ ] Enforce video-only requirement for List A first prescriptions
 
