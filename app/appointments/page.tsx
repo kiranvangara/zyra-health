@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabase';
 import { Calendar, Clock, Video, User, Star, FileText, X, AlertCircle } from 'lucide-react';
+import { REVIEW_QUESTIONS, EMOJI_SCALE, selectQuestions } from '../utils/reviewConstants';
+import type { QuestionKey } from '../utils/reviewConstants';
 
 interface Appointment {
     id: string;
@@ -28,8 +30,9 @@ export default function Appointments() {
 
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedApptForReview, setSelectedApptForReview] = useState<any>(null);
-    const [rating, setRating] = useState(5);
     const [comment, setComment] = useState('');
+    const [selectedQuestions, setSelectedQuestions] = useState<typeof REVIEW_QUESTIONS[number][]>([]);
+    const [emojiScores, setEmojiScores] = useState<Record<string, number>>({});
 
     useEffect(() => {
         fetchAppointments();
@@ -84,10 +87,24 @@ export default function Appointments() {
         setLoading(false);
     };
 
-    const openReviewModal = (appt: any) => {
+    const openReviewModal = async (appt: any) => {
         setSelectedApptForReview(appt);
-        setRating(5);
         setComment('');
+        setEmojiScores({});
+
+        // Fetch question counts for this doctor to pick least-answered
+        const { data: existingResponses } = await supabase
+            .from('review_responses')
+            .select('question_key, review_id!inner(doctor_id)')
+            .eq('review_id.doctor_id', appt.doctor_id);
+
+        const counts: Record<string, number> = {};
+        (existingResponses || []).forEach((r: any) => {
+            counts[r.question_key] = (counts[r.question_key] || 0) + 1;
+        });
+
+        const questions = selectQuestions(counts);
+        setSelectedQuestions(questions);
         setReviewModalOpen(true);
 
         const daysSince = Math.round(
@@ -97,41 +114,68 @@ export default function Appointments() {
             doctor_id: appt.doctor_id,
             appointment_id: appt.id,
             days_since_appointment: daysSince,
+            questions_shown: questions.map(q => q.key),
         });
     };
 
     const submitReview = async () => {
         if (!selectedApptForReview) return;
 
+        // Require all 3 questions answered
+        const answeredKeys = Object.keys(emojiScores);
+        if (answeredKeys.length < selectedQuestions.length) {
+            alert('Please answer all questions before submitting.');
+            return;
+        }
+
         const { data: { user } } = await supabase.auth.getUser();
 
-        const { error } = await supabase.from('reviews').insert({
+        // Compute overall rating as average of emoji scores
+        const scores = Object.values(emojiScores);
+        const overallRating = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+
+        // Insert review
+        const { data: review, error } = await supabase.from('reviews').insert({
             doctor_id: selectedApptForReview.doctor_id,
             patient_id: user?.id,
             appointment_id: selectedApptForReview.id,
-            rating,
+            rating: overallRating,
             comment,
             is_approved: false
+        }).select().single();
+
+        if (error || !review) {
+            alert('Error submitting review: ' + (error?.message || 'Unknown error'));
+            return;
+        }
+
+        // Insert individual question responses
+        const responses = selectedQuestions.map(q => ({
+            review_id: review.id,
+            question_key: q.key,
+            score: emojiScores[q.key],
+        }));
+
+        const { error: respError } = await supabase.from('review_responses').insert(responses);
+        if (respError) {
+            console.error('Error inserting review responses:', respError);
+        }
+
+        posthog.capture('review_submitted', {
+            doctor_id: selectedApptForReview.doctor_id,
+            appointment_id: selectedApptForReview.id,
+            overall_rating: overallRating,
+            questions_answered: answeredKeys,
+            scores: emojiScores,
+            has_comment: comment.trim().length > 0,
         });
 
-        if (error) {
-            alert('Error submitting review: ' + error.message);
-        } else {
-            posthog.capture('review_submitted', {
-                doctor_id: selectedApptForReview.doctor_id,
-                appointment_id: selectedApptForReview.id,
-                rating,
-                has_comment: comment.trim().length > 0,
-                comment_length: comment.trim().length,
-            });
-            alert('Review submitted for moderation!');
-            setReviewModalOpen(false);
-            // Optimistically update UI
-            const newAppts = appointments.map(a =>
-                a.id === selectedApptForReview.id ? { ...a, hasReviewed: true } : a
-            );
-            setAppointments(newAppts as Appointment[]);
-        }
+        alert('Review submitted for moderation!');
+        setReviewModalOpen(false);
+        const newAppts = appointments.map(a =>
+            a.id === selectedApptForReview.id ? { ...a, hasReviewed: true } : a
+        );
+        setAppointments(newAppts as Appointment[]);
     };
 
     const formatDateRelative = (dateString: string) => {
@@ -387,7 +431,6 @@ export default function Appointments() {
             )}
 
             <BottomNav />
-            {/* Review Modal code remains same */}
             {reviewModalOpen && selectedApptForReview && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -396,9 +439,10 @@ export default function Appointments() {
                     animation: 'fadeIn 0.2s ease-out'
                 }}>
                     <div className="card" style={{
-                        width: '90%', maxWidth: '350px', padding: '30px',
+                        width: '90%', maxWidth: '380px', padding: '30px',
                         borderRadius: '24px', boxShadow: '0 20px 50px -10px rgba(0,0,0,0.3)',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center'
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        maxHeight: '90vh', overflowY: 'auto'
                     }}>
                         <div style={{
                             width: '60px', height: '60px', borderRadius: '50%', background: '#F1F5F9', marginBottom: '16px',
@@ -412,40 +456,52 @@ export default function Appointments() {
                         </div>
 
                         <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '700', color: '#0F172A', textAlign: 'center' }}>
-                            Rate Experience
+                            Rate Your Experience
                         </h3>
-                        <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#64748B', textAlign: 'center' }}>
+                        <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: '#64748B', textAlign: 'center' }}>
                             How was your consultation with<br />Dr. {selectedApptForReview.doctor.display_name}?
                         </p>
 
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '24px' }}>
-                            {[1, 2, 3, 4, 5].map(star => (
-                                <div
-                                    key={star}
-                                    onClick={() => setRating(star)}
-                                    style={{
-                                        cursor: 'pointer',
-                                        transform: star <= rating ? 'scale(1.1)' : 'scale(1)',
-                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                                    }}
-                                >
-                                    <Star
-                                        size={32}
-                                        fill={star <= rating ? '#F59E0B' : 'transparent'}
-                                        color={star <= rating ? '#F59E0B' : '#CBD5E1'}
-                                        strokeWidth={1.5}
-                                    />
+                        {/* Emoji Questions */}
+                        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+                            {selectedQuestions.map((q) => (
+                                <div key={q.key}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '10px' }}>
+                                        {q.question}
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px' }}>
+                                        {EMOJI_SCALE.map((level) => (
+                                            <div
+                                                key={level.value}
+                                                onClick={() => setEmojiScores(prev => ({ ...prev, [q.key]: level.value }))}
+                                                style={{
+                                                    flex: 1,
+                                                    textAlign: 'center',
+                                                    padding: '8px 4px',
+                                                    borderRadius: '12px',
+                                                    cursor: 'pointer',
+                                                    background: emojiScores[q.key] === level.value ? '#EEF2FF' : 'transparent',
+                                                    border: emojiScores[q.key] === level.value ? '2px solid var(--primary)' : '2px solid transparent',
+                                                    transition: 'all 0.15s ease',
+                                                    transform: emojiScores[q.key] === level.value ? 'scale(1.1)' : 'scale(1)',
+                                                }}
+                                            >
+                                                <div style={{ fontSize: '24px' }}>{level.emoji}</div>
+                                                <div style={{ fontSize: '9px', color: '#94A3B8', marginTop: '2px', fontWeight: '500' }}>{level.label}</div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             ))}
                         </div>
 
                         <textarea
                             className="input-box"
-                            placeholder="Write your review here..."
+                            placeholder="Any additional comments? (optional)"
                             value={comment}
                             onChange={(e) => setComment(e.target.value)}
-                            rows={3}
-                            style={{ width: '100%', marginBottom: '24px', resize: 'none', background: '#F8FAFC', padding: '16px' }}
+                            rows={2}
+                            style={{ width: '100%', marginBottom: '20px', resize: 'none', background: '#F8FAFC', padding: '14px', fontSize: '13px' }}
                         />
 
                         <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
@@ -461,7 +517,11 @@ export default function Appointments() {
                             <button
                                 className="btn primary"
                                 onClick={submitReview}
-                                style={{ flex: 1, borderRadius: '14px', fontSize: '14px' }}
+                                disabled={Object.keys(emojiScores).length < selectedQuestions.length}
+                                style={{
+                                    flex: 1, borderRadius: '14px', fontSize: '14px',
+                                    opacity: Object.keys(emojiScores).length < selectedQuestions.length ? 0.5 : 1
+                                }}
                             >
                                 Submit
                             </button>

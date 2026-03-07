@@ -132,6 +132,32 @@
 - [ ] Appointment Reminders — push/email notifications before calls
 - [ ] Chat System — simple text chat between patient and doctor (post-consultation)
 
+### Automated Workflows & Transactional Emails
+> Implement automated workflows for all key processes across patient and doctor journeys.
+
+**Patient Workflows:**
+- [ ] Welcome email on signup (intro to platform, how it works)
+- [ ] Booking confirmation email/notification (appointment details, video link)
+- [ ] Booking reminder — 24h before appointment
+- [ ] Booking reminder — 1h before appointment
+- [ ] Post-consultation follow-up (rate your experience, prescription attached)
+- [ ] Follow-up reminder (if doctor recommended follow-up)
+- [ ] Prescription ready notification
+- [ ] Invoice/receipt email after payment
+- [ ] Account inactivity re-engagement (hasn't booked in 30+ days)
+
+**Doctor Workflows:**
+- [ ] Welcome email on onboarding (platform guide, setup checklist)
+- [ ] New appointment notification
+- [ ] Daily schedule summary (morning digest of today's appointments)
+- [ ] New review notification
+- [ ] Profile completeness reminder (if missing photo/bio/schedule)
+
+**System Workflows:**
+- [ ] Failed payment retry notification
+- [ ] No-show handling (patient or doctor didn't join)
+- [ ] Consent expiry / renewal reminder
+
 ### WhatsApp Business Integration *(blocked — depends on company registration)*
 - [ ] Set up WhatsApp Business account
 - [ ] Add WhatsApp contact link/button to landing page and footer
@@ -145,12 +171,12 @@
 - [ ] Finalize chatbot approach (Freshchat vs WhatsApp button)
 - [ ] Implement chosen solution
 
-### Multi-Dimensional Doctor Reviews
-- [ ] Replace single overall rating with aspect-based ratings (Friendliness, Expertise, Communication, Punctuality)
-- [ ] Update `reviews` table schema (add per-aspect rating columns)
-- [ ] Update review submission UI (patient side)
-- [ ] Update doctor profile to display per-aspect average ratings
-- [ ] Update admin review moderation panel
+### Multi-Dimensional Doctor Reviews ✅
+- [x] 8-question pool, 3 shown per review (2 random + 1 least-answered)
+- [x] 5-emoji scale (😞😕😐🙂🤩) replaces star rating
+- [x] `review_responses` table for per-question scores
+- [x] Adjective-based doctor profile display ("Patients describe Dr. X as...")
+- [x] Updated admin moderation panel with dimension scores
 
 ---
 

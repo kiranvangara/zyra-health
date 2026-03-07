@@ -7,6 +7,7 @@ import { supabase } from '../../utils/supabase';
 import { ArrowLeft, User } from 'lucide-react';
 import { formatPrice } from '../../../utils/formatPrice';
 import { useCurrency } from '../../context/CurrencyContext';
+import { REVIEW_QUESTIONS, buildAdjectiveSentence } from '../../utils/reviewConstants';
 
 interface DoctorProfile {
     id: string;
@@ -30,6 +31,8 @@ function DoctorProfileContent() {
     const { currency } = useCurrency();
     const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [reviewSentence, setReviewSentence] = useState<string | null>(null);
+    const [reviewCount, setReviewCount] = useState(0);
 
     useEffect(() => {
         const id = searchParams.get('id');
@@ -56,6 +59,40 @@ function DoctorProfileContent() {
 
         setDoctor(data);
         setLoading(false);
+
+        // Fetch aggregated review responses for adjective sentence
+        const { data: responses } = await supabase
+            .from('review_responses')
+            .select('question_key, score, review_id!inner(doctor_id, is_approved)')
+            .eq('review_id.doctor_id', id)
+            .eq('review_id.is_approved', true);
+
+        if (responses && responses.length > 0) {
+            const aggregated: Record<string, { total: number; count: number }> = {};
+            responses.forEach((r: any) => {
+                if (!aggregated[r.question_key]) {
+                    aggregated[r.question_key] = { total: 0, count: 0 };
+                }
+                aggregated[r.question_key].total += r.score;
+                aggregated[r.question_key].count += 1;
+            });
+
+            const avgData: Record<string, { avg: number; count: number }> = {};
+            for (const [key, val] of Object.entries(aggregated)) {
+                avgData[key] = { avg: val.total / val.count, count: val.count };
+            }
+
+            const sentence = buildAdjectiveSentence(avgData, data.display_name || 'this doctor');
+            setReviewSentence(sentence);
+        }
+
+        // Get total review count
+        const { count } = await supabase
+            .from('reviews')
+            .select('id', { count: 'exact', head: true })
+            .eq('doctor_id', id)
+            .eq('is_approved', true);
+        setReviewCount(count || 0);
 
         posthog.capture('doctor_profile_viewed', {
             doctor_id: data.id,
@@ -129,11 +166,25 @@ function DoctorProfileContent() {
                             <div style={{ fontSize: '11px', color: '#666' }}>Years Exp</div>
                         </div>
                         <div>
-                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--primary)' }}>4.8★</div>
-                            <div style={{ fontSize: '11px', color: '#666' }}>Rating</div>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--primary)' }}>{reviewCount}</div>
+                            <div style={{ fontSize: '11px', color: '#666' }}>Reviews</div>
                         </div>
                     </div>
                 </div>
+
+                {/* Patient Impressions */}
+                {reviewSentence && (
+                    <div style={{
+                        padding: '16px', background: '#f0fdf4', borderRadius: '12px',
+                        border: '1px solid #bbf7d0', marginBottom: '0',
+                        display: 'flex', alignItems: 'flex-start', gap: '10px'
+                    }}>
+                        <span style={{ fontSize: '20px' }}>💬</span>
+                        <p style={{ margin: 0, fontSize: '14px', color: '#166534', lineHeight: '1.5', fontStyle: 'italic' }}>
+                            {reviewSentence}
+                        </p>
+                    </div>
+                )}
 
                 {/* About */}
                 <div className="card">
