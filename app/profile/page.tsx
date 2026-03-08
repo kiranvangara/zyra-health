@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import BottomNav from '../components/BottomNav';
 import { supabase } from '../utils/supabase';
+import { enrichUserProfile } from '../utils/enrichUserProfile';
+import posthog from 'posthog-js';
 
 export default function Profile() {
     const router = useRouter();
@@ -41,6 +43,9 @@ export default function Profile() {
             });
             setConsentWithdrawn(patient?.consent_withdrawn || false);
             setLoading(false);
+
+            // Enrich PostHog user profile with behavioral signals
+            enrichUserProfile();
         };
         fetchProfile();
     }, []);
@@ -189,6 +194,53 @@ export default function Profile() {
                 <div className="card" style={{ cursor: 'pointer' }}>Payment Methods</div>
                 <div className="card" style={{ cursor: 'pointer' }} onClick={() => router.push('/legal/privacy')}>Privacy Policy</div>
                 <div className="card" style={{ cursor: 'pointer' }} onClick={() => router.push('/legal/terms')}>Terms & Conditions</div>
+
+                {/* Refer & Share */}
+                <div className="card" style={{
+                    background: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)',
+                    border: '1px solid #C7D2FE',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                        <span style={{ fontSize: '22px' }}>🎁</span>
+                        <div>
+                            <div style={{ fontWeight: '600', color: '#312E81', fontSize: '14px' }}>Share Medivera</div>
+                            <div style={{ fontSize: '11px', color: '#6366F1' }}>Help others access quality healthcare</div>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                            onClick={() => {
+                                const refLink = `${window.location.origin}/signup?ref=${profile?.userId || ''}&utm_source=referral&utm_medium=share`;
+                                navigator.clipboard.writeText(refLink);
+                                posthog.capture('referral_shared', { method: 'copy_link' });
+                                alert('Link copied!');
+                            }}
+                            style={{
+                                flex: 1, padding: '10px', borderRadius: '10px', border: 'none',
+                                background: 'white', fontSize: '12px', fontWeight: '600',
+                                color: '#4F46E5', cursor: 'pointer',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                            }}
+                        >
+                            📋 Copy Link
+                        </button>
+                        <button
+                            onClick={() => {
+                                const refLink = `${window.location.origin}/signup?ref=${profile?.userId || ''}&utm_source=referral&utm_medium=whatsapp`;
+                                const text = `Hey! I've been using Medivera for online doctor consultations. It's really convenient. Try it: ${refLink}`;
+                                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                                posthog.capture('referral_shared', { method: 'whatsapp' });
+                            }}
+                            style={{
+                                flex: 1, padding: '10px', borderRadius: '10px', border: 'none',
+                                background: '#25D366', fontSize: '12px', fontWeight: '600',
+                                color: 'white', cursor: 'pointer',
+                            }}
+                        >
+                            💬 WhatsApp
+                        </button>
+                    </div>
+                </div>
 
                 {/* Data Rights */}
                 <div

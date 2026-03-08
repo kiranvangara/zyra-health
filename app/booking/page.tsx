@@ -75,12 +75,22 @@ function BookingContent() {
             if (patient) {
                 if (patient.consent_withdrawn) {
                     setConsentWithdrawn(true);
+                    posthog.capture('booking_consent_withdrawn_block', {
+                        doctor_id: data.id,
+                    });
                     return;
                 }
                 if (patient.age === null || patient.age === undefined) {
                     setAgeNotSet(true);
+                    posthog.capture('booking_age_not_set', {
+                        doctor_id: data.id,
+                    });
                 } else if (parseInt(patient.age) < 18) {
                     setAgeRestricted(true);
+                    posthog.capture('booking_age_restricted', {
+                        doctor_id: data.id,
+                        patient_age: parseInt(patient.age),
+                    });
                     return;
                 }
             }
@@ -104,6 +114,13 @@ function BookingContent() {
             }
         }
         setSlotsLoading(false);
+
+        // Track no-slots-available
+        if (!error && slots.length === 0) {
+            posthog.capture('booking_no_slots_available', {
+                doctor_id: doctorId,
+            });
+        }
     };
 
     // Group slots by Date: { "2024-01-20": ["10:00", "10:30"] }

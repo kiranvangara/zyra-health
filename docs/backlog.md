@@ -1,7 +1,25 @@
 # Medivera — Product Backlog
 
-> **Last Updated:** Mar 5, 2026
+> **Last Updated:** Mar 7, 2026
 > Consolidated from all previous conversations into a single source of truth.
+
+---
+
+## 🔗 Dependencies — Blocked on Company Registration
+
+> The following features are **blocked** until Pvt Ltd / LLP registration is complete.
+> Registration unlocks: PAN, GST, DLT registration, app store accounts, and business API access.
+
+| Feature | Dependency | Why |
+|---------|-----------|-----|
+| **Mobile Number Login (OTP)** — P0 | DLT Registration (TRAI) | Indian SMS requires company PAN + DLT-approved sender ID (e.g., `VM-MEDVRA`) |
+| **Push Notifications** — P1 | App Store & Play Store accounts | Need ₹2,100 (Apple) + $25 (Google) developer accounts |
+| **Payment Integration** — P0 | GST Registration + Company PAN | Razorpay/Stripe India KYC requires company entity |
+| **WhatsApp Business API** — P1 | Meta Business Verification | Requires registered business entity |
+| **Customer Support Chat** — P1 | Decision pending | Freshchat ($19/mo) vs WhatsApp button (free) |
+| **GST Registration** | Company PAN | Needed for invoicing and payment gateway |
+| **Professional Indemnity Insurance** | Company entity | Medical malpractice coverage |
+| **Automated Workflows** — P1 | Supabase Pro ($25/mo) | Edge Functions, Database Webhooks, pg_cron needed |
 
 ---
 
@@ -132,8 +150,10 @@
 - [ ] Appointment Reminders — push/email notifications before calls
 - [ ] Chat System — simple text chat between patient and doctor (post-consultation)
 
-### Automated Workflows & Transactional Emails
-> Implement automated workflows for all key processes across patient and doctor journeys.
+### Automated Workflows & Transactional Emails *(parked — pre-production)*
+> **Decision:** Will implement closer to production using Supabase Edge Functions + Resend.
+> **Requires:** Supabase Pro plan ($25/mo) for Edge Functions, Webhooks & pg_cron.
+> **Email provider:** Resend (3,000 emails/mo free).
 
 **Patient Workflows:**
 - [ ] Welcome email on signup (intro to platform, how it works)
@@ -193,7 +213,7 @@
 - [ ] Keep generic "Book Consultation" for standard profiles
 
 ### Auth & Platform Expansion
-- [ ] Mobile Number Login — OTP-based authentication (Twilio/Supabase)
+- [ ] Mobile Number Login (OTP) — **moved to P0, blocked on DLT registration** *(see Dependencies)*
 - [ ] Apple ID Integration — native Sign-in for iOS
 - [ ] Performance Optimization — LCP improvements and bundle analysis
 

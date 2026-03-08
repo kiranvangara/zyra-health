@@ -2,6 +2,7 @@
 
 import posthog from 'posthog-js';
 import BottomNav from '../components/BottomNav';
+import MicroSurvey from '../components/MicroSurvey';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '../utils/supabase';
@@ -33,6 +34,9 @@ export default function Appointments() {
     const [comment, setComment] = useState('');
     const [selectedQuestions, setSelectedQuestions] = useState<typeof REVIEW_QUESTIONS[number][]>([]);
     const [emojiScores, setEmojiScores] = useState<Record<string, number>>({});
+
+    // Micro-survey state
+    const [activeSurvey, setActiveSurvey] = useState<'worth_fee' | 'sean_ellis' | null>(null);
 
     useEffect(() => {
         fetchAppointments();
@@ -85,6 +89,21 @@ export default function Appointments() {
         console.log('Appointments fetched:', appointmentsWithDetails); // DEBUG: Check photo URLs
         setAppointments(appointmentsWithDetails);
         setLoading(false);
+
+        // Determine which survey to show based on completed consultations
+        const completedCount = appointmentsWithDetails.filter(
+            (a: any) => a.status === 'completed'
+        ).length;
+
+        const shownSurveys = JSON.parse(localStorage.getItem('medivera_surveys_shown') || '{}');
+
+        if (completedCount >= 2 && !shownSurveys['sean_ellis']) {
+            // Show Sean Ellis after 2nd consultation
+            setTimeout(() => setActiveSurvey('sean_ellis'), 2000);
+        } else if (completedCount >= 1 && !shownSurveys['worth_fee']) {
+            // Show "worth the fee" after 1st consultation
+            setTimeout(() => setActiveSurvey('worth_fee'), 2000);
+        }
     };
 
     const openReviewModal = async (appt: any) => {
@@ -428,6 +447,43 @@ export default function Appointments() {
                         </div>
                     )}
                 </div>
+            )}
+
+            {/* Micro-Surveys */}
+            {activeSurvey === 'worth_fee' && (
+                <MicroSurvey
+                    surveyId="worth_fee"
+                    question="Was your last consultation worth the fee?"
+                    options={[
+                        { value: 'yes', emoji: '✅', label: 'Yes, definitely' },
+                        { value: 'somewhat', emoji: '😐', label: 'Somewhat' },
+                        { value: 'no', emoji: '❌', label: 'Not really' },
+                    ]}
+                    onDismiss={() => {
+                        setActiveSurvey(null);
+                        const shown = JSON.parse(localStorage.getItem('medivera_surveys_shown') || '{}');
+                        shown['worth_fee'] = Date.now();
+                        localStorage.setItem('medivera_surveys_shown', JSON.stringify(shown));
+                    }}
+                />
+            )}
+
+            {activeSurvey === 'sean_ellis' && (
+                <MicroSurvey
+                    surveyId="sean_ellis"
+                    question="How would you feel if you could no longer use Medivera?"
+                    options={[
+                        { value: 'very_disappointed', emoji: '😢', label: 'Very disappointed' },
+                        { value: 'somewhat_disappointed', emoji: '😕', label: 'Somewhat disappointed' },
+                        { value: 'not_disappointed', emoji: '😐', label: 'Not disappointed' },
+                    ]}
+                    onDismiss={() => {
+                        setActiveSurvey(null);
+                        const shown = JSON.parse(localStorage.getItem('medivera_surveys_shown') || '{}');
+                        shown['sean_ellis'] = Date.now();
+                        localStorage.setItem('medivera_surveys_shown', JSON.stringify(shown));
+                    }}
+                />
             )}
 
             <BottomNav />

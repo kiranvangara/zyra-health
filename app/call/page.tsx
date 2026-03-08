@@ -11,6 +11,7 @@ function VideoCallContent() {
     const router = useRouter();
     const [appointment, setAppointment] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [callStartTime] = useState(Date.now());
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -22,8 +23,16 @@ function VideoCallContent() {
 
             const appointmentId = searchParams.get('appointmentId');
             if (appointmentId) {
+                posthog.capture('call_join_attempted', {
+                    appointment_id: appointmentId,
+                    platform: Capacitor.isNativePlatform() ? 'native' : 'web',
+                });
                 fetchAppointment(appointmentId);
             } else {
+                posthog.capture('call_join_failed', {
+                    error: 'no_appointment_id',
+                    platform: Capacitor.isNativePlatform() ? 'native' : 'web',
+                });
                 setLoading(false);
             }
         };
@@ -38,12 +47,20 @@ function VideoCallContent() {
             .single();
 
         if (error || !data) {
+            posthog.capture('call_join_failed', {
+                appointment_id: id,
+                error: 'appointment_not_found',
+            });
             alert('Appointment not found');
             router.back();
             return;
         }
 
         if (!data.meeting_link) {
+            posthog.capture('call_join_failed', {
+                appointment_id: id,
+                error: 'no_meeting_link',
+            });
             alert('Video room not created yet');
             router.back();
             return;
@@ -75,7 +92,16 @@ function VideoCallContent() {
             <div style={{ padding: '15px', background: 'rgba(0,0,0,0.8)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ fontSize: '14px' }}>Medivera Consultation</div>
                 <button
-                    onClick={() => router.push('/appointments')}
+                    onClick={() => {
+                        const durationSeconds = Math.round((Date.now() - callStartTime) / 1000);
+                        posthog.capture('call_ended', {
+                            appointment_id: appointment.id,
+                            duration_seconds: durationSeconds,
+                            is_ultra_short: durationSeconds < 120,
+                            platform: Capacitor.isNativePlatform() ? 'native' : 'web',
+                        });
+                        router.push('/appointments');
+                    }}
                     style={{
                         background: '#ff4444',
                         color: 'white',

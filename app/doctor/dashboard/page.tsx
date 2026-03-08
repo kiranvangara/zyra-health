@@ -7,6 +7,7 @@ import { supabase } from '../../utils/supabase';
 import { formatPrice } from '../../../utils/formatPrice';
 import { Users, DollarSign, Clock } from 'lucide-react';
 import DoctorBottomNav from '../../components/DoctorBottomNav';
+import MicroSurvey from '../../components/MicroSurvey';
 
 interface Appointment {
     id: string;
@@ -24,6 +25,7 @@ export default function DoctorDashboard() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [stats, setStats] = useState({ patients: 0, earnings: 0 });
     const [loading, setLoading] = useState(true);
+    const [doctorSurvey, setDoctorSurvey] = useState<string | null>(null);
 
     useEffect(() => {
         fetchDashboardData();
@@ -94,6 +96,18 @@ export default function DoctorDashboard() {
                 todays_appointments: appts?.length || 0,
                 total_patients: uniquePatients.size,
             });
+
+            // Doctor feedback surveys — show based on completed consultation milestones
+            const completedCount = allAppts?.length || 0;
+            const shownSurveys = JSON.parse(localStorage.getItem('medivera_doctor_surveys') || '{}');
+
+            if (completedCount >= 10 && !shownSurveys['recommend_colleagues']) {
+                setTimeout(() => setDoctorSurvey('recommend_colleagues'), 2000);
+            } else if (completedCount >= 5 && !shownSurveys['rx_writer']) {
+                setTimeout(() => setDoctorSurvey('rx_writer'), 2000);
+            } else if (completedCount >= 2 && !shownSurveys['video_quality']) {
+                setTimeout(() => setDoctorSurvey('video_quality'), 2000);
+            }
         }
 
         setLoading(false);
@@ -240,6 +254,62 @@ export default function DoctorDashboard() {
                     </>
                 )}
             </div>
+
+            {/* Doctor Feedback Surveys */}
+            {doctorSurvey === 'video_quality' && (
+                <MicroSurvey
+                    surveyId="doctor_video_quality"
+                    question="Is the video quality sufficient for your consultations?"
+                    options={[
+                        { value: 'yes', emoji: '✅', label: 'Yes, works well' },
+                        { value: 'mostly', emoji: '😐', label: 'Mostly, some issues' },
+                        { value: 'no', emoji: '❌', label: 'No, needs improvement' },
+                    ]}
+                    context={{ role: 'doctor', doctor_id: doctor?.id }}
+                    onDismiss={() => {
+                        setDoctorSurvey(null);
+                        const shown = JSON.parse(localStorage.getItem('medivera_doctor_surveys') || '{}');
+                        shown['video_quality'] = Date.now();
+                        localStorage.setItem('medivera_doctor_surveys', JSON.stringify(shown));
+                    }}
+                />
+            )}
+            {doctorSurvey === 'rx_writer' && (
+                <MicroSurvey
+                    surveyId="doctor_rx_writer"
+                    question="Is the prescription writer meeting your needs?"
+                    options={[
+                        { value: 'yes', emoji: '✅', label: 'Yes, it\'s great' },
+                        { value: 'needs_work', emoji: '🔧', label: 'Needs some improvements' },
+                        { value: 'no', emoji: '❌', label: 'Not adequate' },
+                    ]}
+                    context={{ role: 'doctor', doctor_id: doctor?.id }}
+                    onDismiss={() => {
+                        setDoctorSurvey(null);
+                        const shown = JSON.parse(localStorage.getItem('medivera_doctor_surveys') || '{}');
+                        shown['rx_writer'] = Date.now();
+                        localStorage.setItem('medivera_doctor_surveys', JSON.stringify(shown));
+                    }}
+                />
+            )}
+            {doctorSurvey === 'recommend_colleagues' && (
+                <MicroSurvey
+                    surveyId="doctor_recommend"
+                    question="Would you recommend other doctors to join Medivera?"
+                    options={[
+                        { value: 'yes', emoji: '👍', label: 'Yes, definitely' },
+                        { value: 'maybe', emoji: '🤔', label: 'Maybe, needs more features' },
+                        { value: 'no', emoji: '👎', label: 'Not yet' },
+                    ]}
+                    context={{ role: 'doctor', doctor_id: doctor?.id }}
+                    onDismiss={() => {
+                        setDoctorSurvey(null);
+                        const shown = JSON.parse(localStorage.getItem('medivera_doctor_surveys') || '{}');
+                        shown['recommend_colleagues'] = Date.now();
+                        localStorage.setItem('medivera_doctor_surveys', JSON.stringify(shown));
+                    }}
+                />
+            )}
 
             {/* Doctor Nav */}
             <DoctorBottomNav />

@@ -1,18 +1,27 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, Suspense } from 'react';
 import { supabase } from '../utils/supabase';
 import posthog from 'posthog-js';
 
-export default function Signup() {
+function SignupContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // Capture UTM params for referral attribution
+    const utmSource = searchParams.get('utm_source') || '';
+    const utmMedium = searchParams.get('utm_medium') || '';
+    const utmCampaign = searchParams.get('utm_campaign') || '';
+    const referralCode = searchParams.get('ref') || '';
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [consentChecked, setConsentChecked] = useState(false);
+    const [signupSource, setSignupSource] = useState('');
 
     const handleSignup = async () => {
         setLoading(true);
@@ -33,7 +42,15 @@ export default function Signup() {
             setError(error.message);
             setLoading(false);
         } else {
-            posthog.capture('signup_complete', { method: 'email' });
+            posthog.capture('signup_complete', {
+                method: 'email',
+                signup_source: signupSource || 'not_specified',
+                utm_source: utmSource,
+                utm_medium: utmMedium,
+                utm_campaign: utmCampaign,
+                referral_code: referralCode,
+                has_referral: !!referralCode,
+            });
 
             // Log data processing consent to audit table
             if (data.user) {
@@ -85,6 +102,21 @@ export default function Signup() {
                     onChange={(e) => setPassword(e.target.value)}
                 />
 
+                <select
+                    className="input-box"
+                    value={signupSource}
+                    onChange={(e) => setSignupSource(e.target.value)}
+                    style={{ color: signupSource ? '#0F172A' : '#94A3B8' }}
+                >
+                    <option value="" disabled>How did you hear about us?</option>
+                    <option value="friend_family">Friend or Family</option>
+                    <option value="social_media">Social Media</option>
+                    <option value="google_search">Google Search</option>
+                    <option value="doctor_referral">Doctor Referral</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="other">Other</option>
+                </select>
+
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '12px', color: '#555', cursor: 'pointer', marginTop: '10px' }}>
                     <input
                         type="checkbox"
@@ -102,5 +134,13 @@ export default function Signup() {
                 </button>
             </div>
         </div>
+    );
+}
+
+export default function Signup() {
+    return (
+        <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>}>
+            <SignupContent />
+        </Suspense>
     );
 }
