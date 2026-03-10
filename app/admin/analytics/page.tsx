@@ -10,20 +10,35 @@ export default function AnalyticsDashboard() {
     const router = useRouter();
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [fetching, setFetching] = useState(false);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState<'overview' | 'doctors' | 'observability'>('overview');
+
+    // Filters
+    const [daysFilter, setDaysFilter] = useState<number | 'all'>(30);
+    const [specialtyFilter, setSpecialtyFilter] = useState('all');
 
     useEffect(() => {
         const init = async () => {
             const isAdmin = await verifyAdminSession();
             if (!isAdmin) { router.push('/admin/login'); return; }
-            const result = await getAnalyticsData();
-            if (result.error) { setError(result.error); }
-            else { setData(result); }
-            setLoading(false);
+            fetchData();
         };
         init();
     }, []);
+
+    useEffect(() => {
+        if (!loading) fetchData(); // Re-fetch on filter change
+    }, [daysFilter, specialtyFilter]);
+
+    const fetchData = async () => {
+        setFetching(true);
+        const result = await getAnalyticsData(daysFilter, specialtyFilter);
+        if (result.error) { setError(result.error); }
+        else { setData(result); }
+        setLoading(false);
+        setFetching(false);
+    };
 
     if (loading) return <div style={styles.loadingContainer}><div style={styles.spinner} /><p style={{ color: '#64748B' }}>Loading analytics...</p></div>;
     if (error) return <div style={{ padding: '40px', color: '#EF4444' }}>Error: {error}</div>;
@@ -49,7 +64,30 @@ export default function AnalyticsDashboard() {
                     <h1 style={styles.title}>Product Analytics</h1>
                     <p style={styles.subtitle}>Real-time business metrics from Supabase</p>
                 </div>
-                <button onClick={() => router.push('/admin')} style={styles.backBtn}>← Back</button>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    {fetching && <span style={{ fontSize: '13px', color: '#94A3B8' }}>Updating...</span>}
+                    <select
+                        value={specialtyFilter}
+                        onChange={(e) => setSpecialtyFilter(e.target.value)}
+                        style={styles.select}
+                    >
+                        <option value="all">All Specialties</option>
+                        {data?.availableSpecialties?.map((s: string) => (
+                            <option key={s} value={s}>{s}</option>
+                        ))}
+                    </select>
+                    <select
+                        value={daysFilter.toString()}
+                        onChange={(e) => setDaysFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                        style={styles.select}
+                    >
+                        <option value="7">Last 7 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="all">All Time</option>
+                    </select>
+                    <button onClick={() => router.push('/admin')} style={styles.backBtn}>← Back</button>
+                </div>
             </div>
 
             {/* Tab Navigation */}
@@ -80,9 +118,9 @@ export default function AnalyticsDashboard() {
                         <KPICard label="Reviews" value={kpis.approvedReviews} sub={`${kpis.totalReviews} total`} icon="⭐" color="#06B6D4" />
                     </div>
 
-                    {/* ─── Activity Trend (30d) ─── */}
+                    {/* ─── Activity Trend ─── */}
                     <div style={styles.card}>
-                        <h3 style={styles.cardTitle}>📈 Activity (Last 30 Days)</h3>
+                        <h3 style={styles.cardTitle}>📈 Activity ({daysFilter === 'all' ? 'All Time (Last 30d visual)' : `Last ${daysFilter} Days`})</h3>
                         <div style={styles.chartContainer}>
                             <div style={styles.barChart}>
                                 {trendDates.map((date, i) => {
@@ -181,7 +219,7 @@ export default function AnalyticsDashboard() {
                                             border: '1px solid #E2E8F0',
                                         }}>
                                             <div style={{ fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
-                                                {question?.emoji || '❓'} {question?.label || dim.dimension}
+                                                ❓ {question?.question || dim.dimension}
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
                                                 <span style={{ fontSize: '22px', fontWeight: '700', color: '#0F172A' }}>
@@ -508,4 +546,5 @@ const styles: Record<string, React.CSSProperties> = {
     table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
     th: { padding: '10px 12px', textAlign: 'left' as const, borderBottom: '2px solid #E2E8F0', color: '#64748B', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.5px' },
     td: { padding: '10px 12px', borderBottom: '1px solid #F1F5F9', color: '#334155' },
+    select: { padding: '8px 12px', borderRadius: '10px', border: '1px solid #E2E8F0', background: 'white', color: '#334155', fontSize: '13px', fontWeight: '500', cursor: 'pointer', outline: 'none' },
 };

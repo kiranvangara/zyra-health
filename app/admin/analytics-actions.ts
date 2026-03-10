@@ -4,31 +4,67 @@ import { supabase } from '../utils/supabase';
 // Analytics Data Actions — Supabase Queries
 // ─────────────────────────────────────────────
 
-export async function getAnalyticsData() {
+export async function getAnalyticsData(days: number | 'all' = 30, specialty: string = 'all') {
     try {
+        const now = new Date();
+        const cutoffDate = days === 'all' ? null : new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
         // Parallel fetch all data
+        let appointmentsQuery = supabase.from('appointments').select('id, status, scheduled_at, doctor_id, patient_id, created_at');
+        let doctorsQuery = supabase.from('doctors').select('id, display_name, specialization, is_verified, consultation_fee, experience_years, created_at');
+        let patientsQuery = supabase.from('patients').select('id, created_at, age, consent_withdrawn');
+        let reviewsQuery = supabase.from('reviews').select('id, rating, is_approved, created_at, doctor_id');
+        let prescriptionsQuery = supabase.from('prescriptions').select('id, appointment_id, created_at');
+
+        if (cutoffDate) {
+            appointmentsQuery = appointmentsQuery.gte('created_at', cutoffDate);
+            patientsQuery = patientsQuery.gte('created_at', cutoffDate);
+            reviewsQuery = reviewsQuery.gte('created_at', cutoffDate);
+            prescriptionsQuery = prescriptionsQuery.gte('created_at', cutoffDate);
+        }
+
+        if (specialty !== 'all') {
+            doctorsQuery = doctorsQuery.eq('specialization', specialty);
+        }
+
         const [
             appointmentsRes,
             doctorsRes,
             patientsRes,
             reviewsRes,
-            responsesRes,
+            responsesRes, // review_responses fetched in full, filtered locally below if needed
             prescriptionsRes,
         ] = await Promise.all([
-            supabase.from('appointments').select('id, status, scheduled_at, doctor_id, patient_id, created_at'),
-            supabase.from('doctors').select('id, display_name, specialization, is_verified, consultation_fee, experience_years, created_at'),
-            supabase.from('patients').select('id, created_at, age, consent_withdrawn'),
-            supabase.from('reviews').select('id, rating, is_approved, created_at, doctor_id'),
+            appointmentsQuery,
+            doctorsQuery,
+            patientsQuery,
+            reviewsQuery,
             supabase.from('review_responses').select('id, review_id, question_key, score'),
-            supabase.from('prescriptions').select('id, appointment_id, created_at'),
+            prescriptionsQuery,
         ]);
 
-        const appointments = appointmentsRes.data || [];
+        let appointments = appointmentsRes.data || [];
         const doctors = doctorsRes.data || [];
         const patients = patientsRes.data || [];
-        const reviews = reviewsRes.data || [];
-        const responses = responsesRes.data || [];
-        const prescriptions = prescriptionsRes.data || [];
+        let reviews = reviewsRes.data || [];
+        let responses = responsesRes.data || [];
+        let prescriptions = prescriptionsRes.data || [];
+
+        // Apply specialty filter locally to relations if needed
+        if (specialty !== 'all') {
+            const docIds = new Set(doctors.map(d => d.id));
+            appointments = appointments.filter(a => docIds.has(a.doctor_id));
+            reviews = reviews.filter(r => docIds.has(r.doctor_id));
+
+            const reviewIds = new Set(reviews.map(r => r.id));
+            responses = responses.filter(r => reviewIds.has(r.review_id));
+
+            const apptIds = new Set(appointments.map(a => a.id));
+            prescriptions = prescriptions.filter(p => apptIds.has(p.appointment_id));
+        }
+
+        // Fetch all specialties for the filter dropdown
+        const { data: allDocs } = await supabase.from('doctors').select('specialization');
+        const availableSpecialties = Array.from(new Set((allDocs || []).map(d => d.specialization).filter(Boolean)));
 
         // ─── KPI Cards ───
         const completed = appointments.filter(a => a.status === 'completed');
@@ -53,13 +89,13 @@ export async function getAnalyticsData() {
             approvedReviews: reviews.filter(r => r.is_approved).length,
         };
 
-        // ─── Daily Trends (last 30 days) ───
-        const now = new Date();
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        // ─── Daily Trends ───
+        const trendDays = days === 'all' ? 30 : days; // default to 30 days chart if "all"
+        const trendCutoff = new Date(now.getTime() - trendDays * 24 * 60 * 60 * 1000);
         const dailyTrends: Record<string, { signups: number; bookings: number; completions: number }> = {};
 
-        for (let i = 0; i < 30; i++) {
-            const d = new Date(thirtyDaysAgo.getTime() + i * 24 * 60 * 60 * 1000);
+        for (let i = 0; i < trendDays; i++) {
+            const d = new Date(trendCutoff.getTime() + i * 24 * 60 * 60 * 1000);
             const key = d.toISOString().split('T')[0];
             dailyTrends[key] = { signups: 0, bookings: 0, completions: 0 };
         }
@@ -210,6 +246,7 @@ export async function getAnalyticsData() {
         };
 
         return {
+            availableSpecialties,
             kpis,
             dailyTrends,
             funnel,

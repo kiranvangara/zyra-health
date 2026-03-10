@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getAdminStats } from './actions';
 
 export default function AdminDashboard() {
+    const router = useRouter();
     const [stats, setStats] = useState({
         totalPatients: 0,
         totalDoctors: 0,
@@ -33,7 +35,19 @@ export default function AdminDashboard() {
 
     return (
         <div style={{ padding: '30px' }}>
-            <h1 style={{ margin: '0 0 30px 0', fontSize: '24px' }}>Dashboard Overview</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <h1 style={{ margin: 0, fontSize: '24px' }}>Dashboard Overview</h1>
+                <button
+                    onClick={() => router.push('/admin/analytics')}
+                    style={{
+                        padding: '10px 20px', borderRadius: '8px', border: 'none',
+                        background: '#3b82f6', color: 'white', fontWeight: 'bold', cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)'
+                    }}
+                >
+                    📈 View Full Analytics
+                </button>
+            </div>
 
             {/* Stats Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px' }}>
